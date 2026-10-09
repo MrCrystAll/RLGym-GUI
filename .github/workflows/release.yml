@@ -41,16 +41,16 @@ jobs:
         with:
           python-version: '3.12'   # use the version you develop with
           cache: pip
-          cache-dependency-path: rlgym-api/requirements.txt
+          cache-dependency-path: rlgym-server/requirements.txt
 
       - name: Freeze backend
-        working-directory: rlgym-api
+        working-directory: rlgym-server
         run: |
           pip install -r requirements.txt pyinstaller
           pyinstaller main.py --name rlgym-backend --noconfirm --clean --collect-submodules uvicorn
 
       - name: Smoke-test frozen backend
-        working-directory: rlgym-api
+        working-directory: rlgym-server
         run: |
           $env:RLGYM_GUI_PORT = "8123"
           $env:RLGYM_GUI_TOKEN = "ci"
