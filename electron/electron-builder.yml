@@ -15,7 +15,7 @@ files:
 
 # The frozen FastAPI backend (PyInstaller onedir output) -> resources/backend/
 extraResources:
-  - from: "../rlgym-api/dist/rlgym-backend"
+  - from: "../rlgym-server/dist/rlgym-backend"
     to: backend
 
 win:
