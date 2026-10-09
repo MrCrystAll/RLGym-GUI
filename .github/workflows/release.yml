@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+env:
+  CHANGELOG_PATH: rlgym-app/CHANGELOG.md   # adjust if your changelog lives elsewhere
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            rlgym-app/package-lock.json
+            electron/package-lock.json
+
+      - name: Check tag matches electron/package.json version
+        shell: bash
+        run: |
+          PKG_VERSION=$(node -p "require('./electron/package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag ($TAG_VERSION) does not match electron/package.json ($PKG_VERSION)"
+            exit 1
+          fi
+
+      - name: Build Angular app
+        working-directory: rlgym-app
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package Electron app
+        working-directory: electron
+        run: |
+          npm ci
+          npm run pack:dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-dist
+          path: |
+            electron/dist/*.exe
+            electron/dist/*.exe.blockmap
+            electron/dist/latest.yml
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check changelog has an entry for this version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if ! grep -qE "^## \[?v?${VERSION//./\\.}\]?( |$)" rlgym-app/CHANGELOG.md; then
+            echo "::error::rlgym-app/CHANGELOG.md has no '## [$VERSION]' section"
+            exit 1
+          fi
+
+      - name: Extract release notes
+        uses: ffurrer2/extract-release-notes@v3
+        with:
+          changelog_file: rlgym-app/CHANGELOG.md
+          release_notes_file: release_notes.md
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          files: artifacts/*
