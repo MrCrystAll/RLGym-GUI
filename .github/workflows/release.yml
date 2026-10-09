@@ -37,7 +37,7 @@ jobs:
           npm ci
           npm run build
 
-          - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'   # use the version you develop with
           cache: pip
