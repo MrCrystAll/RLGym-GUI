@@ -37,6 +37,34 @@ jobs:
           npm ci
           npm run build
 
+          - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'   # use the version you develop with
+          cache: pip
+          cache-dependency-path: rlgym-api/requirements.txt
+
+      - name: Freeze backend
+        working-directory: rlgym-api
+        run: |
+          pip install -r requirements.txt pyinstaller
+          pyinstaller main.py --name rlgym-backend --noconfirm --clean --collect-submodules uvicorn
+
+      - name: Smoke-test frozen backend
+        working-directory: rlgym-api
+        run: |
+          $env:RLGYM_GUI_PORT = "8123"
+          $env:RLGYM_GUI_TOKEN = "ci"
+          $p = Start-Process dist/rlgym-backend/rlgym-backend.exe -PassThru
+          $ok = $false
+          foreach ($i in 1..30) {
+            try {
+              $r = Invoke-WebRequest http://127.0.0.1:8123/health -Headers @{ "X-Api-Token" = "ci" } -UseBasicParsing
+              if ($r.StatusCode -eq 200) { $ok = $true; break }
+            } catch { Start-Sleep -Seconds 1 }
+          }
+          Stop-Process -Id $p.Id -Force
+          if (-not $ok) { throw "Frozen backend did not become healthy" }
+
       - name: Package Electron app
         working-directory: electron
         run: |

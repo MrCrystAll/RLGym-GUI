@@ -1,5 +1,10 @@
+import multiprocessing
+
 import uvicorn
+
 from app import config
+from app.api import app
 
 if __name__ == "__main__":
-    uvicorn.run("app.api:app", host="127.0.0.1", port=config.PORT)
+    multiprocessing.freeze_support()
+    uvicorn.run(app, host="127.0.0.1", port=config.PORT)
