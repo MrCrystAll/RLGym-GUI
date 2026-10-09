@@ -23,16 +23,3 @@ code, pre, .mono {
 table, .numeric {
   font-variant-numeric: tabular-nums;
 }
-
-.btn {
-    @apply font-bold py-2 px-4 rounded;
-}
-.btn-info {
-    @apply bg-gray-500 text-white;
-}
-.btn-info:hover {
-    @apply bg-gray-700;
-}
-.btn-info:active {
-    @apply bg-gray-900;
-}
