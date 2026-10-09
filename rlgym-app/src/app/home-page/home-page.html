@@ -1,0 +1,9 @@
+<div>
+    <h2>Status: {{ updaterService.state().status }}</h2>
+    <div class="flex">
+        <button class="btn btn-info" (click)="updaterService.check()">Check</button>
+        <button class="btn btn-info" (click)="updaterService.download()">Download</button>
+        <button class="btn btn-info" (click)="updaterService.install()">Install</button>
+    </div>
+
+</div>

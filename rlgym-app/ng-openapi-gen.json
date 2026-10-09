@@ -1,0 +1,4 @@
+{
+    "input": "../rlgym-server/openapi.json",
+    "output": "src/app/api"
+}

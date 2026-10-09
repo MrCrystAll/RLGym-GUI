@@ -1,0 +1,14 @@
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+mac:
+  target:
+    - target: dmg
+      arch: universal
+    - target: zip          # required: the macOS updater downloads the zip, not the dmg
+      arch: universal
+publish:
+  provider: github
+  owner: MrCryyStall
+  repo: RLGymGUI

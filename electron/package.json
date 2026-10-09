@@ -1,0 +1,22 @@
+{
+  "name": "electron-app",
+  "version": "0.0.1",
+  "description": "An application test",
+  "keywords": [
+    "rlgym"
+  ],
+  "license": "ISC",
+  "author": "MrCyyStall",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron .",
+    "pack:dir": "electron-builder --dir",
+    "pack:dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "electron-updater": "^6.8.9"
+  }
+}

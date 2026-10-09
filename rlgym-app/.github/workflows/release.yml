@@ -1,0 +1,10 @@
+name: Build and release
+
+on:
+    push:
+        tags: 
+            -"*"
+
+jobs:
+    build:
+        
