@@ -22,10 +22,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/health", operation_id="getHealth")
+@app.get("/health", operation_id="getHealth", tags=["system"])
 def health():
     return {"status": "ok"}
 
-@app.get("/version", operation_id="getVersion")
+@app.get("/version", operation_id="getVersion", tags=["system"])
 def version():
     return {"version": config.VERSION}

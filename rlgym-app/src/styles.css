@@ -1,6 +1,28 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+:root {
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, Consolas, monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;          /* desktop tools usually read better smaller than web defaults */
+  -webkit-font-smoothing: antialiased;
+}
+
+code, pre, .mono {
+  font-family: var(--font-mono);
+}
+
+/* aligned digits in tables, stats, and live-updating values */
+table, .numeric {
+  font-variant-numeric: tabular-nums;
+}
 
 .btn {
     @apply font-bold py-2 px-4 rounded;

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
 const net = require('net');
@@ -108,6 +108,18 @@ function createWindow() {
             contextIsolation: true,
             enableRemoteModule: false,
         }
+    });
+
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+      if (url.startsWith('https://')) shell.openExternal(url);
+      return { action: 'deny' };
+    });
+    mainWindow.webContents.on('will-navigate', (event, url) => {
+      const isApp = url.startsWith('file://') || url.startsWith('http://localhost:4200');
+      if (!isApp) {
+        event.preventDefault();
+        if (url.startsWith('https://')) shell.openExternal(url);
+      }
     });
 
     mainWindow.once('ready-to-show', () => mainWindow.show());

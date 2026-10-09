@@ -7,6 +7,9 @@
   "paths": {
     "/health": {
       "get": {
+        "tags": [
+          "system"
+        ],
         "summary": "Health",
         "operationId": "getHealth",
         "responses": {
@@ -23,6 +26,9 @@
     },
     "/version": {
       "get": {
+        "tags": [
+          "system"
+        ],
         "summary": "Version",
         "operationId": "getVersion",
         "responses": {

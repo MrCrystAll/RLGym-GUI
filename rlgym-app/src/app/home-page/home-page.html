@@ -1,9 +1,49 @@
-<div>
-    <h2>Status: {{ updaterService.state().status }}</h2>
-    <div class="flex">
-        <button class="btn btn-info" (click)="updaterService.check()">Check</button>
-        <button class="btn btn-info" (click)="updaterService.download()">Download</button>
-        <button class="btn btn-info" (click)="updaterService.install()">Install</button>
-    </div>
+    <main>
+      <section class="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 md:grid-cols-[1.1fr_1fr] md:py-24">
+        <div>
+          <h1 class="text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
+            A workbench for RLGym environments
+          </h1>
+          <p class="mt-5 max-w-[52ch] text-lg text-slate-600 dark:text-slate-400">
+            Configure Rocket League environments, step through them tick by tick, and see exactly
+            where each reward comes from. No training code required.
+          </p>
 
-</div>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a
+              [href]="links.repo" target="_blank" rel="noopener noreferrer"
+              class="rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+            >View on GitHub</a>
+            <a
+              [href]="links.docs" target="_blank" rel="noopener noreferrer"
+              class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:border-slate-700 dark:hover:bg-slate-900"
+            >Read the RLGym docs</a>
+          </div>
+
+          <p class="mt-8 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400" role="status">
+            @let v = version();
+            @if (v === undefined) {
+              <span class="h-2 w-2 rounded-full bg-slate-400"></span> Connecting to backend…
+            } @else if (v === null) {
+              <span class="h-2 w-2 rounded-full bg-red-500"></span> Backend unavailable
+            } @else {
+              <span class="h-2 w-2 rounded-full bg-green-500"></span>
+              Backend <span class="mono">v{{ v }}</span> running
+            }
+          </p>
+        </div>
+
+      </section>
+
+      <section class="mx-auto max-w-6xl px-6 pb-24">
+        <h2 class="text-xl font-semibold tracking-tight">What you can do</h2>
+        <ul class="mt-6 divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+          @for (f of features; track f.title) {
+            <li class="grid gap-1 py-5 sm:grid-cols-[12rem_1fr] sm:gap-8">
+              <h3 class="font-medium">{{ f.title }}</h3>
+              <p class="max-w-[60ch] text-slate-600 dark:text-slate-400">{{ f.body }}</p>
+            </li>
+          }
+        </ul>
+      </section>
+    </main>

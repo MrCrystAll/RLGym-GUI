@@ -1,0 +1,20 @@
+@let s = state();
+
+    @if (s.status !== 'disabled') {
+      <button
+        type="button"
+        class="relative overflow-hidden whitespace-nowrap rounded-full border bg-transparent px-3 py-1 text-xs transition-colors enabled:cursor-pointer disabled:cursor-default"
+        [class]="view().classes"
+        [disabled]="view().busy"
+        [title]="view().title"
+        (click)="onClick()"
+      >
+        @if (s.status === 'downloading') {
+          <span
+            class="absolute inset-y-0 left-0 bg-blue-500/20 transition-[width] duration-200"
+            [style.width.%]="s.percent"
+          ></span>
+        }
+        <span class="relative">{{ view().label }}</span>
+      </button>
+    }

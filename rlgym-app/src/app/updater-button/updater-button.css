@@ -1,0 +1,27 @@
+.update-btn {
+      position: relative;
+      overflow: hidden;
+      padding: 4px 12px;
+      font: inherit;
+      font-size: 12px;
+      border: 1px solid var(--border, #d0d5dd);
+      border-radius: 999px;
+      background: var(--surface, transparent);
+      color: var(--text-muted, #667085);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .update-btn:hover:not(:disabled) { border-color: currentColor; }
+    .update-btn:disabled { cursor: default; }
+
+    .update-btn.accent { color: var(--accent, #2563eb); border-color: currentColor; }
+    .update-btn.success { color: #16a34a; border-color: currentColor; }
+    .update-btn.danger { color: #dc2626; border-color: currentColor; }
+
+    .label { position: relative; z-index: 1; }
+    .bar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      background: color-mix(in srgb, var(--accent, #2563eb) 20%, transparent);
+      transition: width 0.2s ease;
+    }
