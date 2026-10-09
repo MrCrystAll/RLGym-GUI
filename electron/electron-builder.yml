@@ -1,17 +1,44 @@
+appId: com.mrcrystall.rlgym-gui        # pick once, never change it (updates depend on it)
+productName: RLGym GUI
+copyright: Copyright © 2026 CryyStall
+
+directories:
+  output: dist
+  # buildResources: build            # uncomment to hold icons (build/icon.ico, build/icon.icns)
+
+npmRebuild: false                    # no native modules in electron/, so skip rebuilding
+
+files:
+  - "**/*"
+  - "!dist/**"
+  - "!electron-builder.yml"
+
+# The frozen FastAPI backend (PyInstaller onedir output) -> resources/backend/
+extraResources:
+  - from: "../rlgym-api/dist/rlgym-backend"
+    to: backend
+
 win:
   target:
     - target: nsis
       arch: [x64]
+
+nsis:
+  oneClick: true                     # silent per-user install, best for auto-update
+  perMachine: false                  # per-user means no admin prompt on update
+  deleteAppDataOnUninstall: false    # keep users' configs and recordings
+  artifactName: "${name}-Setup-${version}.${ext}"   # no spaces, so GitHub asset names match latest.yml
+
 mac:
   target:
     - target: dmg
       arch: universal
-    - target: zip          # required: the macOS updater downloads the zip, not the dmg
+    - target: zip                    # the macOS updater downloads the zip, not the dmg
       arch: universal
+  artifactName: "${name}-${version}-mac.${ext}"
+
+# Baked into the app as app-update.yml: this is where installed apps look for updates.
 publish:
   provider: github
   owner: MrCrystAll
   repo: RLGym-GUI
-extraResources:
-  - from: "../rlgym-server/dist/rlgym-backend"
-    to: backend

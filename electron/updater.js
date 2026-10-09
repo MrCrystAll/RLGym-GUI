@@ -1,9 +1,13 @@
 const { app, ipcMain } = require('electron');
 const { autoUpdater } = require('electron-updater');
+const log = require("electron-log")
 
 function initUpdater({ getWindow, beforeInstall }) {
   autoUpdater.autoDownload = false;          // user decides when to download
   autoUpdater.autoInstallOnAppQuit = false;  // we control installation
+  autoUpdater.logger = log;
+  
+  log.transports.file.level = "info";
 
   const send = (state) => getWindow()?.webContents.send('updater:state', state);
 
