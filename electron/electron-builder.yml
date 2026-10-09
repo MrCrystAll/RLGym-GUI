@@ -12,3 +12,6 @@ publish:
   provider: github
   owner: MrCrystAll
   repo: RLGym-GUI
+extraResources:
+  - from: "../rlgym-server/dist/rlgym-backend"
+    to: backend
