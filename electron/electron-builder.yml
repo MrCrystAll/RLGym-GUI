@@ -10,5 +10,5 @@ mac:
       arch: universal
 publish:
   provider: github
-  owner: MrCryyStall
-  repo: RLGymGUI
+  owner: MrCrystAll
+  repo: RLGym-GUI

@@ -12,7 +12,7 @@
   "scripts": {
     "start": "electron .",
     "pack:dir": "electron-builder --dir",
-    "pack:dist": "electron-builder"
+    "pack:dist": "electron-builder --publish never"
   },
   "devDependencies": {
     "electron": "^44.5.1",
