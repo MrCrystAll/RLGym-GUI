@@ -5,10 +5,11 @@ import { catchError, map, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { ApiConfiguration } from '../api/api-configuration';
 import { getVersion } from '../api/functions';
+import { FieldDiagram } from '../field-diagram/field-diagram';
 
 @Component({
   selector: 'app-home-page',
-  imports: [],
+  imports: [FieldDiagram],
   templateUrl: './home-page.html',
   styleUrl: './home-page.css',
 })
