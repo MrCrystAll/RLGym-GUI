@@ -12,5 +12,8 @@ import { UpdaterButton } from '../updater-button/updater-button';
 export class Navbar {
     protected links = LINKS;
   // Add an entry here whenever you add a page to app.routes.ts
-    protected items = [{ label: 'Home', path: '/' }];
+    protected items = [
+      { label: 'Home', path: '/' },
+      { label: 'Settings', path: '/settings' },
+    ];
 }

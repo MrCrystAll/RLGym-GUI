@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- A Settings page: choose the Python interpreter of your RLGym project (type its path or pick it with "Browse…") and the modules to scan for components. The page shows the interpreter's Python and rlgym-api versions, or why it can't be used.
+
 ## [0.1.0] - 2026-10-17
 
 ### Added
