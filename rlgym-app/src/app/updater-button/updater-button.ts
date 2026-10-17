@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { UpdaterService } from '../updater-service';
 
@@ -13,13 +14,14 @@ const TONES: Record<Tone, string> = {
 
 @Component({
   selector: 'app-updater-button',
-  imports: [],
+  imports: [DatePipe],
   templateUrl: './updater-button.html',
   styleUrl: './updater-button.css',
 })
 export class UpdaterButton {
   private updates = inject(UpdaterService);
   protected state = this.updates.state;
+  protected release = this.updates.release;
 
   protected view = computed(() => {
     const s = this.state();

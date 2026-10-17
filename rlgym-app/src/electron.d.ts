@@ -1,6 +1,13 @@
+// notes: the release's changelog section as HTML (unsanitized). date: ISO string.
+export interface ReleaseInfo {
+  version: string;
+  notes: string | null;
+  date: string | null;
+}
+
 export type UpdateState =
   | { status: 'idle' | 'checking' | 'up-to-date' | 'disabled' }
-  | { status: 'available' | 'ready'; version: string }
+  | ({ status: 'available' | 'ready' } & ReleaseInfo)
   | { status: 'downloading'; percent: number }
   | { status: 'error'; message: string };
 
