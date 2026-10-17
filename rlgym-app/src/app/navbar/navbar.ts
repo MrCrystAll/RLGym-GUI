@@ -14,6 +14,7 @@ export class Navbar {
   // Add an entry here whenever you add a page to app.routes.ts
     protected items = [
       { label: 'Home', path: '/' },
+      { label: 'Components', path: '/components' },
       { label: 'Settings', path: '/settings' },
     ];
 }
