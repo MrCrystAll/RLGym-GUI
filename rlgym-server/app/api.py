@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from pydantic import BaseModel
 
-from app import config
+from app import config, settings
 
 
 # The operationId (and so the generated client method name) is the route function's name.
@@ -49,3 +49,6 @@ def get_health() -> Health:
 @app.get("/version", tags=["system"])
 def get_version() -> Version:
     return Version(version=config.VERSION)
+
+
+app.include_router(settings.router)
