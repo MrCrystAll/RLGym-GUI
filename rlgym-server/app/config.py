@@ -6,6 +6,9 @@ PORT = int(os.environ.get("RLGYM_GUI_PORT", 8000))
 TOKEN = os.environ.get("RLGYM_GUI_TOKEN", "dev-token")
 DATA_DIR = os.environ.get("RLGYM_GUI_DATA_DIR", "./data")
 VERSION = os.environ.get("RLGYM_GUI_VERSION", "0.0.1")
+# Seconds a worker call may take before the worker is killed. Generous: discovery imports user
+# modules, which can pull in heavy libraries (torch...).
+WORKER_TIMEOUT = float(os.environ.get("RLGYM_GUI_WORKER_TIMEOUT", 60))
 
 
 def worker_script() -> Path:
