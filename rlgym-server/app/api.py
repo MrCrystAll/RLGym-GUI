@@ -1,11 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
+from pydantic import BaseModel
 
 from app import config
 
 
-app = FastAPI(title="RLGym GUI backend", version=config.VERSION)
+# The operationId (and so the generated client method name) is the route function's name.
+def operation_id(route: APIRoute) -> str:
+    return route.name
+
+
+app = FastAPI(
+    title="RLGym GUI backend",
+    version=config.VERSION,
+    generate_unique_id_function=operation_id,
+)
 
 @app.middleware("http")
 async def check_token(request, call_next):
@@ -22,10 +33,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/health", operation_id="getHealth", tags=["system"])
-def health():
-    return {"status": "ok"}
 
-@app.get("/version", operation_id="getVersion", tags=["system"])
-def version():
-    return {"version": config.VERSION}
+class Health(BaseModel):
+    status: str
+
+
+class Version(BaseModel):
+    version: str
+
+
+@app.get("/health", tags=["system"])
+def get_health() -> Health:
+    return Health(status="ok")
+
+@app.get("/version", tags=["system"])
+def get_version() -> Version:
+    return Version(version=config.VERSION)

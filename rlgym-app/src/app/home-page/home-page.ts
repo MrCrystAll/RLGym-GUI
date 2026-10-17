@@ -2,9 +2,7 @@ import { Component, inject } from '@angular/core';
 import { LINKS } from '../links';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, map, of } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
-import { ApiConfiguration } from '../api/api-configuration';
-import { getVersion } from '../api/functions';
+import { SystemService } from '../api';
 import { FieldDiagram } from '../field-diagram/field-diagram';
 
 @Component({
@@ -16,12 +14,11 @@ import { FieldDiagram } from '../field-diagram/field-diagram';
 export class HomePage {
     protected links = LINKS;
 
-  private http = inject(HttpClient);
-  private cfg = inject(ApiConfiguration);
+  private system = inject(SystemService);
 
   protected version = toSignal(
-    getVersion(this.http, this.cfg.rootUrl).pipe(
-      map((r) => r.body.version as string | null),
+    this.system.getVersion().pipe(
+      map((r): string | null => r.version),
       catchError(() => of(null)),
     ),
     { initialValue: undefined },

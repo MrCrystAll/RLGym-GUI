@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/@openapitools/openapi-generator-cli/config.schema.json",
+  "spaces": 2,
+  "generator-cli": {
+    "version": "7.26.0",
+    "generators": {
+      "api": {
+        "generatorName": "typescript-angular",
+        "inputSpec": "../rlgym-server/openapi.json",
+        "output": "src/app/api",
+        "additionalProperties": {
+          "ngVersion": "21.2.0",
+          "fileNaming": "kebab-case",
+          "supportsES6": true,
+          "stringEnums": true,
+          "useSingleRequestParameter": true
+        }
+      }
+    }
+  }
+}
