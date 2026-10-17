@@ -12,10 +12,10 @@ function initUpdater({ getWindow, beforeInstall }) {
   const send = (state) => getWindow()?.webContents.send('updater:state', state);
 
   autoUpdater.on('checking-for-update', () => send({ status: 'checking' }));
-  autoUpdater.on('update-available', (info) => send({ status: 'available', version: info.version }));
+  autoUpdater.on('update-available', (info) => send({ status: 'available', ...release(info) }));
   autoUpdater.on('update-not-available', () => send({ status: 'up-to-date' }));
   autoUpdater.on('download-progress', (p) => send({ status: 'downloading', percent: Math.round(p.percent) }));
-  autoUpdater.on('update-downloaded', (info) => send({ status: 'ready', version: info.version }));
+  autoUpdater.on('update-downloaded', (info) => send({ status: 'ready', ...release(info) }));
   autoUpdater.on('error', (err) => send({ status: 'error', message: err.message }));
 
   async function check() {
@@ -33,6 +33,15 @@ function initUpdater({ getWindow, beforeInstall }) {
   });
 
   return { check };
+}
+
+// The GitHub Release body (our changelog section) comes as HTML, or as one note per version when
+// fullChangelog is on. The renderer sanitizes it before display.
+function release(info) {
+  const notes = Array.isArray(info.releaseNotes)
+    ? info.releaseNotes.map((n) => n.note ?? '').join('')
+    : info.releaseNotes;
+  return { version: info.version, notes: notes || null, date: info.releaseDate ?? null };
 }
 
 module.exports = { initUpdater };

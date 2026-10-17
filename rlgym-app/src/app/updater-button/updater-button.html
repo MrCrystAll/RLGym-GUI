@@ -1,20 +1,47 @@
 @let s = state();
+@let r = release();
 
     @if (s.status !== 'disabled') {
-      <button
-        type="button"
-        class="relative overflow-hidden whitespace-nowrap rounded-full border bg-transparent px-3 py-1 text-xs transition-colors enabled:cursor-pointer disabled:cursor-default"
-        [class]="view().classes"
-        [disabled]="view().busy"
-        [title]="view().title"
-        (click)="onClick()"
-      >
-        @if (s.status === 'downloading') {
-          <span
-            class="absolute inset-y-0 left-0 bg-blue-500/20 transition-[width] duration-200"
-            [style.width.%]="s.percent"
-          ></span>
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          class="relative overflow-hidden whitespace-nowrap rounded-full border bg-transparent px-3 py-1 text-xs transition-colors enabled:cursor-pointer disabled:cursor-default"
+          [class]="view().classes"
+          [disabled]="view().busy"
+          [title]="view().title"
+          (click)="onClick()"
+        >
+          @if (s.status === 'downloading') {
+            <span
+              class="absolute inset-y-0 left-0 bg-blue-500/20 transition-[width] duration-200"
+              [style.width.%]="s.percent"
+            ></span>
+          }
+          <span class="relative">{{ view().label }}</span>
+        </button>
+
+        @if (r?.notes) {
+          <button
+            type="button"
+            popovertarget="release-notes"
+            class="whats-new cursor-pointer rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+          >What's new</button>
+
+          <div
+            id="release-notes"
+            popover
+            class="notes-popover max-h-[70vh] w-96 max-w-[calc(100vw-2rem)] overflow-auto rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          >
+            <h2 class="font-semibold text-slate-900 dark:text-white">What's new in v{{ r!.version }}</h2>
+            @if (r!.date) {
+              <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Released {{ r!.date | date: 'longDate' }}</p>
+            }
+            <!-- Angular sanitizes innerHTML: scripts, handlers and unsafe URLs are stripped. -->
+            <div
+              class="notes mt-3 [&_a]:text-orange-600 [&_a]:underline [&_h3]:mt-3 [&_h3]:font-medium [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_h3:first-child]:mt-0 [&_li]:mt-1 [&_p]:mt-2 [&_ul]:mt-1 [&_ul]:list-disc [&_ul]:pl-5"
+              [innerHTML]="r!.notes"
+            ></div>
+          </div>
         }
-        <span class="relative">{{ view().label }}</span>
-      </button>
+      </div>
     }
