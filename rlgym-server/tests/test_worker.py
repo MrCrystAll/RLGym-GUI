@@ -114,6 +114,46 @@ def test_creates_a_missing_data_dir(data_dir, monkeypatch):
     assert (missing / "worker.log").is_file()
 
 
+def test_hanging_call_times_out_and_the_worker_recovers(worker):
+    worker.call(PYTHON, "info")
+    pid = worker._proc.pid
+
+    with pytest.raises(WorkerError, match="didn't answer 'discover' within 1s"):
+        worker.call(PYTHON, "discover", {"modules": ["hanging_module"]}, timeout=1)
+    assert worker._proc is None                          # killed, lock released
+
+    assert worker.call(PYTHON, "info")["error"] is None  # a fresh worker answers
+    assert worker._proc.pid != pid
+
+
+def test_default_timeout_comes_from_config(data_dir, monkeypatch):
+    monkeypatch.setattr(config, "WORKER_TIMEOUT", 1)
+    w = Worker(WORKER_SCRIPT)
+    try:
+        with pytest.raises(WorkerError, match="within 1s"):
+            w.call(PYTHON, "discover", {"modules": ["hanging_module"]})
+    finally:
+        w.stop()
+
+
+def test_stop_closes_the_log(worker):
+    worker.call(PYTHON, "info")
+    log = worker._log
+    worker.stop()
+    assert log.closed
+    assert worker._log is None
+
+
+def test_restart_closes_the_previous_log(worker):
+    worker.call(PYTHON, "info")
+    first = worker._log
+    worker._proc.kill()
+    worker._proc.wait()
+    worker.call(PYTHON, "info")                          # dead process: _ensure restarts it
+    assert first.closed
+    assert not worker._log.closed
+
+
 def test_missing_interpreter(worker, data_dir):
     with pytest.raises(WorkerError, match="Cannot start"):
         worker.call(str(data_dir / "no-such-python"), "info")
