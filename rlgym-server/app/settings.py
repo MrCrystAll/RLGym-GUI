@@ -11,6 +11,11 @@ from . import config
 log = logging.getLogger(__name__)
 
 
+def clean_module_list(modules: list[str]) -> list[str]:
+    # Trimmed, no blanks, no duplicates, order kept: the list is typed in by hand.
+    return list(dict.fromkeys(m.strip() for m in modules if m.strip()))
+
+
 class Settings(BaseModel):
     python: str | None = Field(
         default=None, description="Path to the Python executable that runs the worker"
@@ -28,8 +33,7 @@ class Settings(BaseModel):
     @field_validator("modules")
     @classmethod
     def clean_modules(cls, v: list[str]) -> list[str]:
-        # Trimmed, no blanks, no duplicates, order kept: the list is typed in by hand.
-        return list(dict.fromkeys(m.strip() for m in v if m.strip()))
+        return clean_module_list(v)
 
 
 def _path() -> Path:
