@@ -1,0 +1,8 @@
+{
+  "name": "rlgym-run-app-skill",
+  "private": true,
+  "description": "Playwright driver for the run-app skill. Kept separate so the app's own dependencies stay untouched.",
+  "dependencies": {
+    "playwright-core": "1.56.1"
+  }
+}
