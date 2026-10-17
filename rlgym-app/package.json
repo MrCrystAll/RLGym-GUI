@@ -1,6 +1,6 @@
 {
   "name": "rlgym-app",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "scripts": {
     "ng": "ng",
     "start": "concurrently -k -n ng,api -c blue,magenta \"ng serve\" \"npm:gen:api:watch\"",
