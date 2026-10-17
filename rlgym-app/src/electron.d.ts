@@ -15,6 +15,11 @@ declare global {
   interface Window {
     rlgym?: {
       getBackendConfig(): Promise<{ port: number; token: string; baseUrl: string }>;
+      // Native file dialog; null when cancelled.
+      openFile(options?: {
+        title?: string;
+        filters?: { name: string; extensions: string[] }[];
+      }): Promise<string | null>;
       updater: {
         check(): Promise<void>;
         download(): Promise<void>;
