@@ -24,7 +24,9 @@ class Worker:
         if self._proc and self._proc.poll() is None and self._python == python:
             return
         self.stop()
-        log = open(Path(config.DATA_DIR) / "worker.log", "a", encoding="utf-8")
+        data_dir = Path(config.DATA_DIR)
+        data_dir.mkdir(parents=True, exist_ok=True)      # e.g. ./data on a fresh dev checkout
+        log = open(data_dir / "worker.log", "a", encoding="utf-8")
         try:
             self._proc = subprocess.Popen(
                 [python, "-u", str(self.script)],

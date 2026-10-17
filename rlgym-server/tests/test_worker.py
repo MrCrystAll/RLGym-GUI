@@ -103,6 +103,17 @@ def test_restarts_after_stop(worker):
     assert worker.call(PYTHON, "info")["error"] is None
 
 
+def test_creates_a_missing_data_dir(data_dir, monkeypatch):
+    missing = data_dir / "not" / "there"
+    monkeypatch.setattr(config, "DATA_DIR", str(missing))
+    w = Worker(WORKER_SCRIPT)
+    try:
+        assert w.call(PYTHON, "info")["error"] is None
+    finally:
+        w.stop()
+    assert (missing / "worker.log").is_file()
+
+
 def test_missing_interpreter(worker, data_dir):
     with pytest.raises(WorkerError, match="Cannot start"):
         worker.call(str(data_dir / "no-such-python"), "info")
