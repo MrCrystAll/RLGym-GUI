@@ -9,7 +9,7 @@ from app.worker_bridge import Worker, WorkerError
 from conftest import FIXTURES, SERVER_DIR
 
 PYTHON = sys.executable
-WORKER_SCRIPT = SERVER_DIR / "worker" / "worker.py"
+WORKER_SCRIPT = config.worker_script()
 
 
 @pytest.fixture
@@ -25,6 +25,17 @@ def worker(data_dir):
     w = Worker(WORKER_SCRIPT)
     yield w
     w.stop()
+
+
+def test_worker_script_from_source():
+    assert WORKER_SCRIPT == SERVER_DIR / "worker" / "worker.py"
+    assert WORKER_SCRIPT.is_file()
+
+
+def test_worker_script_when_frozen(tmp_path, monkeypatch):
+    # PyInstaller sets sys._MEIPASS to the bundle's data folder (_internal/ in onedir builds).
+    monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path), raising=False)
+    assert config.worker_script() == tmp_path / "worker" / "worker.py"
 
 
 def test_info(worker):
