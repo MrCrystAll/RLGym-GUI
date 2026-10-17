@@ -94,7 +94,7 @@ jobs:
       - name: Freeze backend
         working-directory: rlgym-server
         run: |
-          pip install -r requirements.txt pyinstaller
+          pip install -r requirements.txt pyinstaller==6.22.3
           pyinstaller main.py --name rlgym-backend --noconfirm --clean --collect-submodules uvicorn --add-data "worker/worker.py;worker"
           if (-not (Test-Path dist/rlgym-backend/_internal/worker/worker.py)) { throw "worker.py is missing from the frozen backend" }
 
