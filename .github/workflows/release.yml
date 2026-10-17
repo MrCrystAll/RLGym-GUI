@@ -89,11 +89,14 @@ jobs:
           cache: pip
           cache-dependency-path: rlgym-server/requirements.txt
 
+      # worker.py runs in the user's interpreter, so it ships as a plain data file
+      # (found at runtime by app.config.worker_script(), under sys._MEIPASS = _internal/).
       - name: Freeze backend
         working-directory: rlgym-server
         run: |
-          pip install -r requirements.txt pyinstaller
-          pyinstaller main.py --name rlgym-backend --noconfirm --clean --collect-submodules uvicorn
+          pip install -r requirements.txt pyinstaller==6.22.3
+          pyinstaller main.py --name rlgym-backend --noconfirm --clean --collect-submodules uvicorn --add-data "worker/worker.py;worker"
+          if (-not (Test-Path dist/rlgym-backend/_internal/worker/worker.py)) { throw "worker.py is missing from the frozen backend" }
 
       - name: Smoke-test frozen backend
         working-directory: rlgym-server

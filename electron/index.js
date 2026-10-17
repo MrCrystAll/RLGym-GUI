@@ -146,6 +146,15 @@ else {
   });
 
   ipcMain.handle('backend:get-config', () => backendConfig);
+  // Native "open file" dialog; resolves to the chosen path, or null if cancelled.
+  ipcMain.handle('dialog:open-file', async (_event, { title, filters } = {}) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title,
+      filters,
+      properties: ['openFile'],
+    });
+    return canceled ? null : filePaths[0];
+  });
 
   app.whenReady().then(async () => {
     try {

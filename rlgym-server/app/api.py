@@ -1,10 +1,12 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from pydantic import BaseModel
 
-from app import config
+from app import config, discovery, settings
 
 
 # The operationId (and so the generated client method name) is the route function's name.
@@ -12,10 +14,17 @@ def operation_id(route: APIRoute) -> str:
     return route.name
 
 
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    yield
+    discovery.stop_worker()                              # don't leave the user's Python running
+
+
 app = FastAPI(
     title="RLGym GUI backend",
     version=config.VERSION,
     generate_unique_id_function=operation_id,
+    lifespan=lifespan,
 )
 
 @app.middleware("http")
@@ -49,3 +58,7 @@ def get_health() -> Health:
 @app.get("/version", tags=["system"])
 def get_version() -> Version:
     return Version(version=config.VERSION)
+
+
+app.include_router(settings.router)
+app.include_router(discovery.router)

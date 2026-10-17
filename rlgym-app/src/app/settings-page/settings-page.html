@@ -1,0 +1,106 @@
+<main class="mx-auto max-w-3xl px-6 py-12">
+  <h1 class="text-2xl font-semibold tracking-tight">Settings</h1>
+  <p class="mt-2 text-slate-600 dark:text-slate-400">
+    Choose the Python interpreter that has your RLGym project installed, and the modules to scan
+    for components.
+  </p>
+
+  @if (loadError(); as error) {
+    <p class="mt-8 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300" role="alert">
+      {{ error }}
+    </p>
+  } @else if (!loaded()) {
+    <p class="mt-8 text-sm text-slate-500 dark:text-slate-400">Loading settings…</p>
+  } @else {
+    <section class="mt-10">
+      <label for="python" class="block font-medium">Python interpreter</label>
+      <div class="mt-2 flex gap-2">
+        <input
+          id="python"
+          type="text"
+          spellcheck="false"
+          placeholder="C:\path\to\.venv\Scripts\python.exe"
+          class="mono min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-orange-500 dark:border-slate-700 dark:bg-slate-900"
+          [value]="python()"
+          (input)="onPythonInput($event)"
+          (change)="checkPython()"
+          aria-describedby="python-status"
+        />
+        @if (canBrowse) {
+          <button
+            type="button"
+            class="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:border-slate-700 dark:hover:bg-slate-900"
+            (click)="browse()"
+          >Browse…</button>
+        }
+      </div>
+
+      <p id="python-status" class="mt-2 flex items-start gap-2 text-sm" role="status">
+        @let c = check();
+        @switch (c.state) {
+          @case ('none') {
+            <span class="text-slate-500 dark:text-slate-400">No interpreter selected.</span>
+          }
+          @case ('checking') {
+            <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-slate-400"></span>
+            <span class="text-slate-500 dark:text-slate-400">Checking…</span>
+          }
+          @case ('unreachable') {
+            <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500"></span>
+            <span class="text-red-700 dark:text-red-300">Could not reach the backend.</span>
+          }
+          @case ('done') {
+            @if (c.info.error) {
+              <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500"></span>
+              <span class="text-red-700 dark:text-red-300">
+                @if (c.info.python) { Python <span class="mono">{{ c.info.python }}</span> · }
+                <span class="mono wrap-anywhere">{{ c.info.error }}</span>
+              </span>
+            } @else {
+              <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-500"></span>
+              <span>
+                Python <span class="mono">{{ c.info.python }}</span> · rlgym-api
+                <span class="mono">{{ c.info.rlgym_api }}</span>
+              </span>
+            }
+          }
+        }
+      </p>
+    </section>
+
+    <section class="mt-10">
+      <label for="modules" class="block font-medium">Modules to scan</label>
+      <p id="modules-hint" class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        One per line, e.g. <span class="mono">my_bot.rewards</span>. They must be importable
+        from the interpreter above.
+      </p>
+      <textarea
+        id="modules"
+        rows="6"
+        spellcheck="false"
+        class="mono mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-orange-500 dark:border-slate-700 dark:bg-slate-900"
+        [value]="modulesText()"
+        (input)="onModulesInput($event)"
+        aria-describedby="modules-hint"
+      ></textarea>
+    </section>
+
+    <div class="mt-8 flex items-center gap-3">
+      <button
+        type="button"
+        class="save rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-slate-950 enabled:cursor-pointer enabled:hover:bg-orange-400 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+        [disabled]="!dirty() || saving()"
+        (click)="save()"
+      >{{ saving() ? 'Saving…' : 'Save' }}</button>
+      <span class="text-sm" role="status">
+        @if (saveError(); as error) {
+          <span class="text-red-700 dark:text-red-300">{{ error }}</span>
+        } @else if (justSaved()) {
+          <span class="text-green-700 dark:text-green-400">Saved.</span>
+        } @else if (dirty()) {
+          <span class="text-slate-500 dark:text-slate-400">Unsaved changes</span>
+        }
+      </span>
+    </div>
+  }
+</main>

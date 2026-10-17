@@ -46,10 +46,335 @@
           }
         }
       }
+    },
+    "/settings": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get Settings",
+        "operationId": "get_settings",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Update Settings",
+        "operationId": "update_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Settings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/python/info": {
+      "get": {
+        "tags": [
+          "discovery"
+        ],
+        "summary": "Get Python Info",
+        "operationId": "get_python_info",
+        "parameters": [
+          {
+            "name": "python",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Interpreter to check instead of the saved one",
+              "title": "Python"
+            },
+            "description": "Interpreter to check instead of the saved one"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PythonInfo"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/components/discover": {
+      "post": {
+        "tags": [
+          "discovery"
+        ],
+        "summary": "Discover Components",
+        "operationId": "discover_components",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscoverRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "ComponentParam": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default",
+            "description": "repr() of the default; null when required"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "default",
+          "required"
+        ],
+        "title": "ComponentParam"
+      },
+      "DiscoverRequest": {
+        "properties": {
+          "modules": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modules",
+            "description": "Modules to scan; the saved list when omitted"
+          }
+        },
+        "type": "object",
+        "title": "DiscoverRequest"
+      },
+      "DiscoverResult": {
+        "properties": {
+          "components": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/DiscoveredComponent"
+              },
+              "type": "array"
+            },
+            "propertyNames": {
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_function",
+                "done_condition",
+                "shared_info_provider"
+              ]
+            },
+            "type": "object",
+            "title": "Components",
+            "description": "Every kind is present, possibly with an empty list"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ModuleError"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "components",
+          "errors"
+        ],
+        "title": "DiscoverResult"
+      },
+      "DiscoveredComponent": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "transition_engine",
+              "state_mutator",
+              "obs_builder",
+              "action_parser",
+              "reward_function",
+              "done_condition",
+              "shared_info_provider"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "module": {
+            "type": "string",
+            "title": "Module"
+          },
+          "qualified_name": {
+            "type": "string",
+            "title": "Qualified Name"
+          },
+          "doc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doc"
+          },
+          "params": {
+            "items": {
+              "$ref": "#/components/schemas/ComponentParam"
+            },
+            "type": "array",
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "name",
+          "module",
+          "qualified_name",
+          "doc",
+          "params"
+        ],
+        "title": "DiscoveredComponent"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
       "Health": {
         "properties": {
           "status": {
@@ -62,6 +387,142 @@
           "status"
         ],
         "title": "Health"
+      },
+      "ModuleError": {
+        "properties": {
+          "module": {
+            "type": "string",
+            "title": "Module"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "module",
+          "message"
+        ],
+        "title": "ModuleError"
+      },
+      "PythonInfo": {
+        "properties": {
+          "python": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Python",
+            "description": "Python version, e.g. 3.12.2; null if it didn't start"
+          },
+          "executable": {
+            "type": "string",
+            "title": "Executable"
+          },
+          "rlgym_api": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rlgym Api",
+            "description": "Installed rlgym-api version; null if not importable"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Why the interpreter or rlgym.api couldn't be used"
+          }
+        },
+        "type": "object",
+        "required": [
+          "python",
+          "executable",
+          "rlgym_api",
+          "error"
+        ],
+        "title": "PythonInfo"
+      },
+      "Settings": {
+        "properties": {
+          "python": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Python",
+            "description": "Path to the Python executable that runs the worker"
+          },
+          "modules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Modules",
+            "description": "Modules to scan for RLGym components"
+          }
+        },
+        "type": "object",
+        "title": "Settings"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
       },
       "Version": {
         "properties": {
