@@ -67,6 +67,21 @@ def test_discover_finds_concrete_components(worker):
     ]
 
 
+def test_discover_does_not_inherit_docstrings(worker):
+    result = worker.call(PYTHON, "discover", {"modules": ["typed_components"]})
+    by_name = {c["name"]: c for c in result["components"]}
+    assert by_name["Undocumented"]["doc"] is None
+    assert by_name["Generic"]["doc"] == "Indented docstring.\n\nSecond paragraph, indented."  # dedented
+
+
+def test_discover_keeps_generic_types_whole(worker):
+    result = worker.call(PYTHON, "discover", {"modules": ["typed_components"]})
+    params = {p["name"]: p for c in result["components"] if c["name"] == "Generic" for p in c["params"]}
+    assert params["max_players"]["type"] == "Optional[int]"
+    assert params["names"]["type"] == "list[str]"
+    assert params["scale"]["type"] == "float"            # string annotation, kept as written
+
+
 def test_user_prints_go_to_the_log_not_the_protocol(worker, data_dir):
     worker.call(PYTHON, "discover", {"modules": ["sample_components"]})
     worker.stop()

@@ -39,7 +39,18 @@ def info(_params):
 
 
 def _type_name(a):
-    return None if a is inspect.Parameter.empty else (getattr(a, "__name__", None) or str(a))
+    if a is inspect.Parameter.empty:
+        return None
+    # formatannotation keeps generics whole (Optional[int], not Optional) and builtins short
+    # (float, not builtins.float). String annotations (from __future__ import annotations) as is.
+    return a if isinstance(a, str) else inspect.formatannotation(a)
+
+
+def _own_doc(cls):
+    # Not inspect.getdoc: it falls back to the base class, so an undocumented reward would show
+    # rlgym's generic "The reward function class..." text.
+    doc = cls.__dict__.get("__doc__")
+    return inspect.cleandoc(doc) if doc else None
 
 
 def _params(cls):
@@ -75,7 +86,7 @@ def discover(params):
             if kind and qname not in seen:
                 seen.add(qname)
                 components.append({"kind": kind, "name": cls.__name__, "module": cls.__module__,
-                                   "qualified_name": qname, "doc": inspect.getdoc(cls),
+                                   "qualified_name": qname, "doc": _own_doc(cls),
                                    "params": _params(cls)})
     return {"components": components, "errors": errors}
 
