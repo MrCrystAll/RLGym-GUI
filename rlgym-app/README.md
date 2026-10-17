@@ -1,3 +1,4 @@
-# RLGym APP
+# RLGym GUI: Angular app
 
-An application designed to use tools for RLGym in a GUI.
+The UI of RLGym GUI. Setup, running, tests and API client generation are covered in the
+[repository README](../README.md).
