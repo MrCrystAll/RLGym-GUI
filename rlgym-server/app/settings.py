@@ -1,12 +1,12 @@
 """User settings (Python interpreter, modules to scan), stored as DATA_DIR/settings.json."""
 import logging
-import os
 from pathlib import Path
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from . import config
+from .storage import write_text_atomic
 
 log = logging.getLogger(__name__)
 
@@ -53,12 +53,7 @@ def load() -> Settings:
 
 
 def save(settings: Settings) -> None:
-    path = _path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    # Write then rename, so a crash mid-write never leaves a half-written settings file.
-    tmp = path.with_suffix(".json.tmp")
-    tmp.write_text(settings.model_dump_json(indent=2), encoding="utf-8")
-    os.replace(tmp, path)
+    write_text_atomic(_path(), settings.model_dump_json(indent=2))
 
 
 router = APIRouter(prefix="/settings", tags=["settings"])

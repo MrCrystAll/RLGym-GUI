@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from pydantic import BaseModel
 
-from app import config, discovery, settings
+from app import config, configs, discovery, settings
 
 
 # The operationId (and so the generated client method name) is the route function's name.
@@ -62,3 +62,4 @@ def get_version() -> Version:
 
 app.include_router(settings.router)
 app.include_router(discovery.router)
+app.include_router(configs.router)
