@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- A Configs page: create named environment configs, see how far along each one is, and delete them.
+
 ## [0.2.0] - 2026-10-17
 
 ### Added

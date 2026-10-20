@@ -15,6 +15,7 @@ export class Navbar {
     protected items = [
       { label: 'Home', path: '/' },
       { label: 'Components', path: '/components' },
+      { label: 'Configs', path: '/configs' },
       { label: 'Settings', path: '/settings' },
     ];
 }
