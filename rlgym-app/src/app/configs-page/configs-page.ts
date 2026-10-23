@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ConfigSummary, ConfigsService } from '../api';
 
@@ -18,12 +19,13 @@ function messageOf(err: unknown): string {
 
 @Component({
   selector: 'app-configs-page',
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   templateUrl: './configs-page.html',
   styleUrl: './configs-page.css',
 })
 export class ConfigsPage {
   private api = inject(ConfigsService);
+  private router = inject(Router);
 
   protected configs = signal<ConfigSummary[] | null>(null);  // null until loaded
   protected loadError = signal<string | null>(null);
@@ -59,9 +61,9 @@ export class ConfigsPage {
     if (!name) return;
     this.creating.set(true);
     try {
-      await firstValueFrom(this.api.createConfig({ configIn: { name } }));
+      const created = await firstValueFrom(this.api.createConfig({ configIn: { name } }));
       this.newName.set('');
-      await this.load();
+      await this.router.navigate(['/configs', created.id]);   // a new config is empty: go fill it in
     } catch (err) {
       this.createError.set(messageOf(err));
     } finally {

@@ -1,0 +1,191 @@
+<main class="mx-auto max-w-3xl px-6 py-12">
+  <a routerLink="/configs" class="text-sm text-slate-500 hover:text-orange-600 dark:text-slate-400 dark:hover:text-orange-400">← Configs</a>
+
+  @switch (load().state) {
+    @case ('loading') {
+      <p class="mt-6 text-sm text-slate-500 dark:text-slate-400">Loading config…</p>
+    }
+    @case ('not-found') {
+      <p class="notice mt-6 rounded-md border border-slate-300 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900" role="alert">
+        This config doesn't exist anymore.
+        <a routerLink="/configs" class="text-orange-600 underline hover:text-orange-500 dark:text-orange-400">Back to your configs</a>.
+      </p>
+    }
+    @case ('failed') {
+      <p class="mt-6 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300" role="alert">
+        Could not reach the backend.
+      </p>
+    }
+    @case ('loaded') {
+      <form (submit)="save($event)">
+        <label for="config-name" class="sr-only">Config name</label>
+        <input
+          id="config-name"
+          type="text"
+          maxlength="100"
+          class="mt-4 w-full rounded-md border border-transparent bg-transparent px-2 py-1 -ml-2 text-2xl font-semibold tracking-tight hover:border-slate-300 focus-visible:border-slate-300 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-orange-500 dark:hover:border-slate-700 dark:focus-visible:border-slate-700"
+          [value]="name()"
+          (input)="onNameInput($event)"
+        />
+
+        @let t = todo();
+        <p class="progress mt-1 text-sm" role="status">
+          @if (t.slots === 0 && t.params === 0) {
+            <span class="text-green-700 dark:text-green-400">Every required part and argument is set.</span>
+          } @else {
+            <span class="text-orange-700 dark:text-orange-300">
+              @if (t.slots) { {{ t.slots === 1 ? '1 required part' : t.slots + ' required parts' }} to choose }
+              @if (t.slots && t.params) { · }
+              @if (t.params) { {{ t.params === 1 ? '1 required argument' : t.params + ' required arguments' }} to fill in }
+            </span>
+          }
+        </p>
+
+        @let s = scan();
+        <div class="mt-6 flex items-start justify-between gap-4">
+          <p class="text-sm text-slate-600 dark:text-slate-400">
+            Pick a component for each part of the env. Arguments are Python expressions
+            (<span class="mono">1.0</span>, <span class="mono">'blue'</span>, <span class="mono">None</span>);
+            leave one empty to use its default.
+          </p>
+          <button
+            type="button"
+            class="rescan shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium enabled:cursor-pointer enabled:hover:bg-slate-100 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:border-slate-700 dark:enabled:hover:bg-slate-900"
+            [disabled]="s.state === 'scanning'"
+            (click)="rescan()"
+          >{{ s.state === 'scanning' ? 'Scanning…' : 'Rescan' }}</button>
+        </div>
+
+        @switch (s.state) {
+          @case ('scanning') {
+            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400" role="status">
+              Importing your modules… (heavy imports can take a while)
+            </p>
+          }
+          @case ('no-interpreter') {
+            <p class="notice mt-4 rounded-md border border-slate-300 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900" role="status">
+              No Python interpreter selected yet, so there are no components to pick from.
+              <a routerLink="/settings" class="text-orange-600 underline hover:text-orange-500 dark:text-orange-400">Choose one in Settings</a>.
+            </p>
+          }
+          @case ('failed') {
+            <div class="mt-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300" role="alert">
+              <p class="font-medium">The component scan failed.</p>
+              <p class="mono mt-1 wrap-anywhere">{{ s.message }}</p>
+            </div>
+          }
+          @case ('done') {
+            @if (s.result.errors.length) {
+              <p class="mt-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300" role="alert">
+                {{ s.result.errors.length === 1 ? '1 module' : s.result.errors.length + ' modules' }} could not be imported.
+                <a routerLink="/components" class="underline">See the errors</a>.
+              </p>
+            }
+          }
+        }
+
+        <div class="mt-6 space-y-4">
+          @for (sl of slots(); track sl.slot) {
+            <section
+              class="slot rounded-lg border bg-white p-4 dark:bg-slate-900"
+              [class]="sl.required && !sl.choice ? 'border-orange-300 dark:border-orange-900' : 'border-slate-200 dark:border-slate-800'"
+              [attr.data-slot]="sl.slot"
+              [attr.aria-labelledby]="'slot-' + sl.slot"
+            >
+              <div class="flex items-baseline justify-between gap-2">
+                <h2 [id]="'slot-' + sl.slot" class="font-semibold">
+                  {{ sl.label }}
+                  <span class="mono ml-1 text-xs font-normal text-slate-500 dark:text-slate-400">{{ sl.slot }}</span>
+                </h2>
+                @if (sl.required) {
+                  <span class="rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-950 dark:text-orange-300">required</span>
+                } @else {
+                  <span class="text-xs text-slate-500 dark:text-slate-400">optional</span>
+                }
+              </div>
+
+              <label [for]="'pick-' + sl.slot" class="sr-only">{{ sl.label }}</label>
+              <select
+                [id]="'pick-' + sl.slot"
+                class="mt-3 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-orange-500 dark:border-slate-700 dark:bg-slate-900"
+                (change)="choose(sl.slot, $event)"
+              >
+                <option value="" [selected]="!sl.choice">{{ sl.required ? '— Choose a component —' : '— None —' }}</option>
+                @for (c of sl.options; track c.qualified_name) {
+                  <option [value]="c.qualified_name" [selected]="sl.choice?.qualified_name === c.qualified_name">{{ optionLabel(c) }}</option>
+                }
+                @if (sl.choice && !sl.component) {
+                  <option [value]="sl.choice.qualified_name" selected>{{ sl.choice.qualified_name }} (not found)</option>
+                }
+              </select>
+
+              @if (sl.choice && !sl.component && s.state === 'done') {
+                <p class="not-found mt-2 text-xs text-orange-700 dark:text-orange-300">
+                  This component wasn't found in the last scan. Is its module still listed in
+                  <a routerLink="/settings" class="underline">Settings</a>?
+                </p>
+              }
+              @if (sl.component?.doc; as doc) {
+                <p class="mt-2 line-clamp-3 whitespace-pre-line text-xs text-slate-600 dark:text-slate-400">{{ doc }}</p>
+              }
+
+              @if (sl.params.length) {
+                <div class="mt-3 space-y-2">
+                  @for (p of sl.params; track p.name) {
+                    <div class="param grid grid-cols-[minmax(0,12rem)_1fr] items-center gap-3">
+                      <label [for]="'param-' + sl.slot + '-' + p.name" class="mono truncate text-sm">
+                        {{ p.name }}
+                        @if (p.type) { <span class="text-slate-500 dark:text-slate-400">: {{ p.type }}</span> }
+                      </label>
+                      <div>
+                        <input
+                          [id]="'param-' + sl.slot + '-' + p.name"
+                          type="text"
+                          spellcheck="false"
+                          class="mono w-full rounded-md border px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-orange-500"
+                          [class]="p.missing
+                            ? 'border-orange-400 bg-orange-50 dark:border-orange-700 dark:bg-orange-950/40'
+                            : 'border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900'"
+                          [value]="p.value"
+                          [placeholder]="p.required ? 'required' : (p.default ?? '')"
+                          [attr.aria-invalid]="p.missing"
+                          (input)="setParam(sl.slot, p.name, $event)"
+                        />
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else if (sl.component) {
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">No constructor arguments.</p>
+              }
+            </section>
+          }
+        </div>
+
+        <div class="sticky bottom-0 mt-6 flex items-center gap-3 border-t border-slate-200 bg-slate-50/90 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+          <button
+            type="submit"
+            class="save rounded-md bg-orange-500 px-4 py-1.5 text-sm font-medium text-slate-950 enabled:cursor-pointer enabled:hover:bg-orange-400 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+            [disabled]="!dirty() || !name().trim() || saving()"
+          >{{ saving() ? 'Saving…' : 'Save' }}</button>
+          @if (dirty()) {
+            <button
+              type="button"
+              class="discard cursor-pointer rounded-md px-3 py-1.5 text-sm hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:hover:bg-slate-800"
+              (click)="discard()"
+            >Discard changes</button>
+          }
+          <p class="save-status text-sm" role="status">
+            @if (saveError(); as error) {
+              <span class="text-red-700 dark:text-red-300">{{ error }}</span>
+            } @else if (justSaved()) {
+              <span class="text-green-700 dark:text-green-400">Saved.</span>
+            } @else if (dirty()) {
+              <span class="text-slate-500 dark:text-slate-400">Unsaved changes</span>
+            }
+          </p>
+        </div>
+      </form>
+    }
+  }
+</main>

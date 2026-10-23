@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - A Configs page: create named environment configs, see how far along each one is, and delete them.
+- A config editor: open a config to rename it, pick a discovered component for each part of the env, and fill in its constructor arguments in a form generated from its signature. Required parts and arguments that are still empty are highlighted.
 
 ## [0.2.0] - 2026-10-17
 
