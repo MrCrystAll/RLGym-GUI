@@ -42,7 +42,7 @@ const TOUCH_REWARD = {
 
 describe('ConfigEditor', () => {
   let fixture: ComponentFixture<ConfigEditor>;
-  let api: Record<'getConfig' | 'updateConfig', ReturnType<typeof vi.fn>>;
+  let api: Record<'getConfig' | 'updateConfig' | 'exportConfig', ReturnType<typeof vi.fn>>;
   let discovery: { discoverComponents: ReturnType<typeof vi.fn> };
 
   const el = () => fixture.nativeElement as HTMLElement;
@@ -77,7 +77,7 @@ describe('ConfigEditor', () => {
   }
 
   beforeEach(async () => {
-    api = { getConfig: vi.fn(), updateConfig: vi.fn() };
+    api = { getConfig: vi.fn(), updateConfig: vi.fn(), exportConfig: vi.fn() };
     discovery = { discoverComponents: vi.fn() };
     await TestBed.configureTestingModule({
       imports: [ConfigEditor],
@@ -168,6 +168,27 @@ describe('ConfigEditor', () => {
     await fixture.whenStable();
     expect(select('reward_fn').value).toBe('');
     expect(saveButton().disabled).toBe(true);
+  });
+
+  it('exports the saved config, not unsaved changes', async () => {
+    await render(of(config()), of(result({ [Kind.RewardFunction]: [GOAL_REWARD] })));
+    api.exportConfig.mockReturnValue(of({ format: 'snippet', filename: 'kickoff.py', content: 'env = RLGym()', missing_slots: [] }));
+    const exportButton = () => el().querySelector<HTMLButtonElement>('button.export')!;
+
+    await pick('reward_fn', GOAL_REWARD.qualified_name);
+    expect(exportButton().disabled).toBe(true);              // unsaved changes
+    el().querySelector<HTMLButtonElement>('button.discard')!.click();
+    await fixture.whenStable();
+    expect(exportButton().disabled).toBe(false);
+
+    exportButton().click();
+    await fixture.whenStable();
+    expect(api.exportConfig).toHaveBeenCalledWith({ configId: ID, format: 'snippet' });
+    expect(text('[role="dialog"] .preview')).toBe('env = RLGym()');
+
+    el().querySelector<HTMLButtonElement>('[role="dialog"] button.close')!.click();
+    await fixture.whenStable();
+    expect(el().querySelector('[role="dialog"]')).toBeNull();
   });
 
   it('keeps a saved component that the scan no longer finds', async () => {

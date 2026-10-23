@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
+const fs = require('fs');
 const net = require('net');
 const path = require('path');
 
@@ -157,6 +158,17 @@ else {
       properties: ['openFile'],
     });
     return canceled ? null : filePaths[0];
+  });
+  // Native "save as" dialog, then writes `content` there; resolves to the path, or null if cancelled.
+  ipcMain.handle('dialog:save-file', async (_event, { title, defaultName, filters, content } = {}) => {
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title,
+      defaultPath: defaultName,
+      filters,
+    });
+    if (canceled || !filePath) return null;
+    await fs.promises.writeFile(filePath, String(content ?? ''), 'utf8');
+    return filePath;
   });
 
   app.whenReady().then(async () => {

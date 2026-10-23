@@ -184,8 +184,18 @@
               <span class="text-slate-500 dark:text-slate-400">Unsaved changes</span>
             }
           </p>
+          <button
+            type="button"
+            class="export ml-auto rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium enabled:cursor-pointer enabled:hover:bg-slate-100 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:border-slate-700 dark:enabled:hover:bg-slate-800"
+            [disabled]="dirty()"
+            [attr.title]="dirty() ? 'Save your changes first: the export uses the saved config' : null"
+            (click)="exporting.set(true)"
+          >Export…</button>
         </div>
       </form>
+      @if (exporting()) {
+        <app-config-export [configId]="id" (closed)="exporting.set(false)" />
+      }
     }
   }
 </main>

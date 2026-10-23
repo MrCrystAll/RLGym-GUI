@@ -20,6 +20,13 @@ declare global {
         title?: string;
         filters?: { name: string; extensions: string[] }[];
       }): Promise<string | null>;
+      // Native "save as" dialog that writes `content` to the chosen file; its path, or null when cancelled.
+      saveFile(options: {
+        title?: string;
+        defaultName?: string;
+        filters?: { name: string; extensions: string[] }[];
+        content: string;
+      }): Promise<string | null>;
       updater: {
         check(): Promise<void>;
         download(): Promise<void>;

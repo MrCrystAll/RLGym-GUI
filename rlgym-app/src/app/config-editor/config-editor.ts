@@ -6,6 +6,7 @@ import {
   ComponentChoice, ConfigSummarySlotsEnum as Slot, ConfigsService, DiscoverResult, DiscoveredComponent,
   DiscoveredComponentKindEnum as Kind, DiscoveryService, EnvConfig,
 } from '../api';
+import { ConfigExportDialog } from '../config-export/config-export';
 
 const UNREACHABLE = 'Could not reach the backend.';
 
@@ -80,14 +81,14 @@ function sameChoices(a: Choices, b: Choices): boolean {
 
 @Component({
   selector: 'app-config-editor',
-  imports: [RouterLink],
+  imports: [RouterLink, ConfigExportDialog],
   templateUrl: './config-editor.html',
   styleUrl: './config-editor.css',
 })
 export class ConfigEditor {
   private api = inject(ConfigsService);
   private discovery = inject(DiscoveryService);
-  private id = inject(ActivatedRoute).snapshot.paramMap.get('id')!;
+  protected id = inject(ActivatedRoute).snapshot.paramMap.get('id')!;
 
   protected load = signal<Load>({ state: 'loading' });
   protected scan = signal<Scan>({ state: 'scanning' });
@@ -99,6 +100,8 @@ export class ConfigEditor {
   protected saving = signal(false);
   protected saveError = signal<string | null>(null);
   protected justSaved = signal(false);
+
+  protected exporting = signal(false);
 
   protected dirty = computed(() => {
     const saved = this.saved();

@@ -31,7 +31,9 @@ node rlgym-app/.claude/skills/run-app/driver.cjs ss:home dark ss:home-dark
   without errors is not proof the page rendered.
 
 Steps: `ss:<name>`, `goto:#/<route>`, `click:<css>`, `click-text:<text>`, `type:<css>=<text>`,
-`wait:<css>`, `text[:<css>]`, `eval:<js>`, `sleep:<ms>`, `dark`, `light`, `size:<w>x<h>`.
+`wait:<css>`, `text[:<css>]`, `eval:<js>`, `main:<js>`, `sleep:<ms>`, `dark`, `light`, `size:<w>x<h>`.
+`main:<js>` runs in Electron's main process: use it to stub native dialogs, which would otherwise
+block the run, e.g. `"main:electron.dialog.showSaveDialog = async () => ({ filePath: 'C:/tmp/x.py' })"`.
 Full descriptions are at the top of `driver.cjs`; add new step types there when needed.
 
 The driver's profile starts with no interpreter selected. To get components to pick from, export
