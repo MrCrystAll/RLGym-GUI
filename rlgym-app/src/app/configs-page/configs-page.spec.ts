@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { ConfigsPage } from './configs-page';
@@ -42,7 +43,7 @@ describe('ConfigsPage', () => {
     api = { listConfigs: vi.fn(), createConfig: vi.fn(), deleteConfig: vi.fn() };
     await TestBed.configureTestingModule({
       imports: [ConfigsPage],
-      providers: [{ provide: ConfigsService, useValue: api }],
+      providers: [provideRouter([]), { provide: ConfigsService, useValue: api }],
     }).compileComponents();
   });
 
@@ -64,10 +65,15 @@ describe('ConfigsPage', () => {
     expect(rowText(0)).toContain('updated Oct 20, 2026');
   });
 
-  it('creates a config and refreshes the list', async () => {
+  it('links each config to its editor', async () => {
+    await render([summary(ID_A, 'Kickoff')]);
+    expect(el().querySelector('a.name')!.getAttribute('href')).toBe(`/configs/${ID_A}`);
+  });
+
+  it('creates a config and opens it', async () => {
     await render([]);
-    api.createConfig.mockReturnValue(of({}));
-    api.listConfigs.mockReturnValue(of([summary(ID_A, 'Kickoff')]));
+    api.createConfig.mockReturnValue(of({ id: ID_A }));
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
     const create = el().querySelector<HTMLButtonElement>('button.create')!;
     expect(create.disabled).toBe(true);                  // nothing typed yet
@@ -76,7 +82,7 @@ describe('ConfigsPage', () => {
     await submit();
 
     expect(api.createConfig).toHaveBeenCalledWith({ configIn: { name: 'Kickoff' } });
-    expect(names()).toEqual(['Kickoff']);
+    expect(navigate).toHaveBeenCalledWith(['/configs', ID_A]);
     expect(el().querySelector<HTMLInputElement>('#new-name')!.value).toBe('');
   });
 
