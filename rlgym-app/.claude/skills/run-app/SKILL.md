@@ -21,7 +21,8 @@ Also needed (normally already there): `rlgym-server/.venv` with `requirements.tx
 node rlgym-app/.claude/skills/run-app/driver.cjs ss:home dark ss:home-dark
 ```
 
-- Reuses a running `ng serve` on :4200, or starts one (and stops it afterwards).
+- Reuses a running `ng serve` on :4200, or starts one (and stops it afterwards). See
+  [Parallel runs](#parallel-runs-git-worktrees-subagents) for another port.
 - Launches Electron in dev mode; Electron spawns the backend from `rlgym-server/.venv` on a random port.
 - Waits for the home page's backend status line ("Backend vX running"), then runs the steps.
 - Log tags: `[main]`/`[main:err]` main process + backend (uvicorn), `[renderer:*]` console,
@@ -32,6 +33,36 @@ node rlgym-app/.claude/skills/run-app/driver.cjs ss:home dark ss:home-dark
 Steps: `ss:<name>`, `goto:#/<route>`, `click:<css>`, `click-text:<text>`, `type:<css>=<text>`,
 `wait:<css>`, `text[:<css>]`, `eval:<js>`, `sleep:<ms>`, `dark`, `light`, `size:<w>x<h>`.
 Full descriptions are at the top of `driver.cjs`; add new step types there when needed.
+
+The driver's profile starts with no interpreter selected. To get components to pick from, export
+`PYTHONPATH=<this folder>` (the worker inherits it) and set the interpreter (an **absolute** path)
+and the `sample_components` module first:
+
+```bash
+export PYTHONPATH="$(cygpath -w "$PWD/rlgym-app/.claude/skills/run-app")"
+node rlgym-app/.claude/skills/run-app/driver.cjs "goto:#/settings" \
+  "type:#python=$(cygpath -w "$PWD/rlgym-server/.venv/Scripts/python.exe")" \
+  "type:#modules=sample_components" "click-text:Save" sleep:1500 ...
+```
+
+### Parallel runs (git worktrees, subagents)
+
+Several copies can run at once if each one sets its own port:
+
+```bash
+RLGYM_NG_PORT=4301 RLGYM_PYTHON=<main checkout>/rlgym-server/.venv/Scripts/python.exe \
+  node rlgym-app/.claude/skills/run-app/driver.cjs ss:home
+```
+
+- `RLGYM_NG_PORT` makes the driver start its own `ng serve` on that port, from this checkout. It
+  fails instead of reusing a server already there, since that one may be serving another worktree.
+- The Electron profile (settings, saved configs) and screenshots get their own folders:
+  `$TMP/rlgym-run-profile-<port>/` and `$TMP/rlgym-run-<port>/`.
+- A new worktree has no `rlgym-server/.venv` (it's untracked). `RLGYM_PYTHON` runs the
+  backend from this worktree's code with the main checkout's venv.
+- It has no `node_modules` either: run `npm install` in `rlgym-app/` and `electron/`, plus the
+  one-time setup above, before the first run.
+- `api-smoke.sh` takes `RLGYM_SMOKE_PORT` the same way.
 
 ## Backend alone - `api-smoke.sh`
 
