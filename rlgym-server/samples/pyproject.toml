@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rlgym-gui-samples"
+version = "0.1.0"
+description = "Sample RLGym environments for trying out RLGym GUI"
+requires-python = ">=3.10"
+# Same pins as requirements.txt.
+dependencies = ["rlgym==2.0.1", "numpy==2.3.4", "Box2D==2.3.10"]
+
+[tool.setuptools.packages.find]
+include = ["rlgym_gui_samples*"]
