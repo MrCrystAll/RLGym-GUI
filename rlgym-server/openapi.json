@@ -264,6 +264,48 @@
         }
       }
     },
+    "/configs/validate": {
+      "post": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "Validate Config",
+        "description": "Build every component in the saved interpreter, then RLGym(...) from them; nothing is reset or\nstepped. Argument expressions are evaluated with eval() in the component's module, so they can\nuse whatever it imports.",
+        "operationId": "validate_config",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/configs/{config_id}": {
       "get": {
         "tags": [
@@ -833,6 +875,157 @@
         },
         "type": "object",
         "title": "Settings"
+      },
+      "SlotCheck": {
+        "properties": {
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "import",
+                  "kind",
+                  "argument",
+                  "construct"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage",
+            "description": "Where building this slot's component failed; null when it built. import: the class can't be imported; kind: it's not the kind the slot takes; argument: an argument expression failed to evaluate; construct: the constructor raised"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Param",
+            "description": "The argument whose expression failed (stage 'argument')"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "'ExceptionType: message'; null when it built"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stage",
+          "param",
+          "error"
+        ],
+        "title": "SlotCheck"
+      },
+      "ValidateRequest": {
+        "properties": {
+          "components": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ComponentChoice"
+            },
+            "propertyNames": {
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "object",
+            "title": "Components",
+            "description": "The components to build, e.g. the editor's unsaved draft"
+          }
+        },
+        "type": "object",
+        "title": "ValidateRequest"
+      },
+      "ValidateResult": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "description": "Every component built and so did the env"
+          },
+          "slots": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SlotCheck"
+            },
+            "propertyNames": {
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "object",
+            "title": "Slots",
+            "description": "One entry per chosen slot"
+          },
+          "missing": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "array",
+            "title": "Missing",
+            "description": "Required slots with no component chosen"
+          },
+          "env_built": {
+            "type": "boolean",
+            "title": "Env Built"
+          },
+          "env_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Env Error",
+            "description": "Why RLGym(...) failed; null when it built or wasn't attempted (a component failed or a required slot is missing)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "slots",
+          "missing",
+          "env_built",
+          "env_error"
+        ],
+        "title": "ValidateResult"
       },
       "ValidationError": {
         "properties": {
