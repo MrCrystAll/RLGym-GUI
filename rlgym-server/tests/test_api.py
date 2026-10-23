@@ -43,3 +43,12 @@ def test_cors_preflight_needs_no_token(client):
     })
     assert r.status_code == 200
     assert r.headers["access-control-allow-origin"] == "http://localhost:4200"
+
+
+def test_cors_allows_only_the_dev_origin(client):
+    # Another dev copy on another port sets RLGYM_GUI_DEV_ORIGIN; it isn't allowed by default.
+    r = client.options("/health", headers={
+        "Origin": "http://localhost:4301",
+        "Access-Control-Request-Method": "GET",
+    })
+    assert "access-control-allow-origin" not in r.headers

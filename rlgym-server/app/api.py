@@ -33,11 +33,11 @@ async def check_token(request, call_next):
         return JSONResponse({"detail": "Invalid token"}, status_code=401)
     return await call_next(request)
 
-# Needed in dev (Angular on :4200). In production, the page loads from file://,
+# Needed in dev (Angular on :4200 by default). In production, the page loads from file://,
 # whose origin is "null", so allow that too.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200", "null"],
+    allow_origins=[config.DEV_ORIGIN, "null"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

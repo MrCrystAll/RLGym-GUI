@@ -16,6 +16,10 @@
 //   dark | light        emulate prefers-color-scheme
 //   size:<w>x<h>        resize the window
 // With no steps, it takes a single screenshot named "home".
+//
+// RLGYM_NG_PORT=<port> runs a private copy for parallel runs (e.g. one per git worktree): it always
+// starts its own `ng serve` on that port (fails if the port is taken, never reuses another one), and
+// uses its own Electron profile and screenshot dir. Without it: port 4200, reusing a running server.
 const { _electron: electron } = require('playwright-core');
 const { spawn, execSync } = require('child_process');
 const fs = require('fs');
@@ -25,8 +29,12 @@ const path = require('path');
 const REPO = path.resolve(__dirname, '../../../..');
 const ELECTRON_DIR = path.join(REPO, 'electron');
 const APP_DIR = path.join(REPO, 'rlgym-app');
-const DEV_URL = 'http://localhost:4200';
-const SHOT_DIR = process.env.RLGYM_SHOT_DIR || path.join(os.tmpdir(), 'rlgym-run');
+const PRIVATE_PORT = process.env.RLGYM_NG_PORT;
+const PORT = PRIVATE_PORT || '4200';
+const DEV_URL = `http://localhost:${PORT}`;
+const SUFFIX = PRIVATE_PORT ? `-${PORT}` : '';
+const SHOT_DIR = process.env.RLGYM_SHOT_DIR || path.join(os.tmpdir(), 'rlgym-run' + SUFFIX);
+const PROFILE_DIR = path.join(os.tmpdir(), 'rlgym-run-profile' + SUFFIX);
 fs.mkdirSync(SHOT_DIR, { recursive: true });
 
 const t0 = Date.now();
@@ -37,18 +45,23 @@ async function devServerUp() {
   try { return (await fetch(DEV_URL)).ok; } catch { return false; }
 }
 
-// Reuse a running `ng serve`; otherwise start one and stop it at the end.
+// Reuse a running `ng serve` (unless the port is private: it may be serving another worktree);
+// otherwise start one and stop it at the end.
 async function ensureDevServer() {
-  if (await devServerUp()) { log('[ng] reusing dev server on :4200'); return null; }
-  log('[ng] starting ng serve...');
-  const ng = spawn('npx', ['ng', 'serve', '--port', '4200'], { cwd: APP_DIR, shell: true, windowsHide: true });
+  if (await devServerUp()) {
+    if (PRIVATE_PORT) throw new Error(`port ${PORT} is already in use - pick another RLGYM_NG_PORT`);
+    log(`[ng] reusing dev server on :${PORT}`);
+    return null;
+  }
+  log(`[ng] starting ng serve on :${PORT}...`);
+  const ng = spawn('npx', ['ng', 'serve', '--port', PORT], { cwd: APP_DIR, shell: true, windowsHide: true });
   ng.stdout.on('data', lines('[ng]'));
   ng.stderr.on('data', lines('[ng:err]'));
   for (let i = 0; i < 120; i++) {
     if (await devServerUp()) { log('[ng] ready'); return ng; }
     await new Promise((r) => setTimeout(r, 500));
   }
-  throw new Error('ng serve did not come up on :4200 within 60 s');
+  throw new Error(`ng serve did not come up on :${PORT} within 60 s`);
 }
 
 function killTree(proc) {
@@ -122,10 +135,14 @@ async function runStep(page, step) {
       executablePath: path.join(ELECTRON_DIR, 'node_modules/electron/dist', process.platform === 'win32' ? 'electron.exe' : 'electron'),
       // Own profile dir: the app holds a single-instance lock per userData dir, so without this the
       // launch dies immediately whenever the user has their own copy open.
-      args: [ELECTRON_DIR, '--user-data-dir=' + path.join(os.tmpdir(), 'rlgym-run-profile')],
+      // A private port gets a private profile too, so parallel runs don't share configs and settings.
+      args: [ELECTRON_DIR, '--user-data-dir=' + PROFILE_DIR],
       cwd: ELECTRON_DIR,
       // VS Code exports ELECTRON_RUN_AS_NODE=1 to child processes, which turns electron.exe into plain Node.
-      env: Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== 'ELECTRON_RUN_AS_NODE')),
+      env: {
+        ...Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== 'ELECTRON_RUN_AS_NODE')),
+        RLGYM_DEV_URL: DEV_URL,
+      },
       timeout: 60_000,
     });
     // Main-process output, including the "[backend] ..." lines index.js forwards from uvicorn.
