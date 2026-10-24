@@ -8,14 +8,15 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, HTTPException, Path as PathParam, Response, status
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
-from . import config
-from .discovery import ComponentKind
+from . import config, discovery
+from .discovery import ComponentKind, WorkerDep
 from .storage import write_text_atomic
+from .worker_bridge import WorkerError
 
 log = logging.getLogger(__name__)
 
 # The arguments of rlgym.api.RLGym(...), minus the renderer. Both done-condition slots take a
-# done_condition component.
+# done_condition component. worker/worker.py has a copy of these two (it can't import the backend).
 Slot = Literal[
     "transition_engine", "state_mutator", "obs_builder", "action_parser", "reward_fn",
     "termination_cond", "truncation_cond", "shared_info_provider",
@@ -65,6 +66,33 @@ class EnvConfig(ConfigIn):
     id: str
     created_at: datetime
     updated_at: datetime
+
+
+class ValidateRequest(BaseModel):
+    components: dict[Slot, ComponentChoice] = Field(
+        default_factory=dict, description="The components to build, e.g. the editor's unsaved draft"
+    )
+
+
+class SlotCheck(BaseModel):
+    stage: Literal["import", "kind", "argument", "construct"] | None = Field(
+        description="Where building this slot's component failed; null when it built. "
+                    "import: the class can't be imported; kind: it's not the kind the slot takes; "
+                    "argument: an argument expression failed to evaluate; construct: the constructor raised"
+    )
+    param: str | None = Field(description="The argument whose expression failed (stage 'argument')")
+    error: str | None = Field(description="'ExceptionType: message'; null when it built")
+
+
+class ValidateResult(BaseModel):
+    ok: bool = Field(description="Every component built and so did the env")
+    slots: dict[Slot, SlotCheck] = Field(description="One entry per chosen slot")
+    missing: list[Slot] = Field(description="Required slots with no component chosen")
+    env_built: bool
+    env_error: str | None = Field(
+        description="Why RLGym(...) failed; null when it built or wasn't attempted "
+                    "(a component failed or a required slot is missing)"
+    )
 
 
 class ConfigSummary(BaseModel):
@@ -139,6 +167,21 @@ def create_config(body: ConfigIn) -> EnvConfig:
     _check_name_free(body.name)
     now = datetime.now(timezone.utc)
     return _save(EnvConfig(id=uuid.uuid4().hex, created_at=now, updated_at=now, **body.model_dump()))
+
+
+# Plain `def`: Worker.call blocks, so FastAPI runs it in its threadpool.
+@router.post("/validate")
+def validate_config(worker: WorkerDep, body: ValidateRequest) -> ValidateResult:
+    """Build every component in the saved interpreter, then RLGym(...) from them; nothing is reset or
+    stepped. Argument expressions are evaluated with eval() in the component's module, so they can
+    use whatever it imports."""
+    python = discovery.interpreter()
+    components = {slot: c.model_dump() for slot, c in body.components.items()}
+    try:
+        result = worker.call(python, "validate", {"components": components})
+    except WorkerError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+    return ValidateResult.model_validate(result)
 
 
 @router.get("/{config_id}")
