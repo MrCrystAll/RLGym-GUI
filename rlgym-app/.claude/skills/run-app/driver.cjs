@@ -12,6 +12,8 @@
 //   wait:<css>          wait up to 10 s for a selector
 //   text[:<css>]        print innerText (whole body by default)
 //   eval:<js>           evaluate in the renderer, print JSON
+//   main:<js>           evaluate in Electron's main process (`electron` is in scope), print JSON,
+//                       e.g. to stub a native dialog: main:electron.dialog.showSaveDialog = async () => ({ filePath: 'C:/x.py' })
 //   sleep:<ms>          pause
 //   dark | light        emulate prefers-color-scheme
 //   size:<w>x<h>        resize the window
@@ -72,7 +74,7 @@ function killTree(proc) {
   } catch { /* already gone */ }
 }
 
-async function runStep(page, step) {
+async function runStep(app, page, step) {
   const i = step.indexOf(':');
   const [cmd, arg] = i < 0 ? [step, ''] : [step.slice(0, i), step.slice(i + 1)];
   switch (cmd) {
@@ -108,6 +110,10 @@ async function runStep(page, step) {
     case 'eval':
       try { return log('eval ->', JSON.stringify(await page.evaluate(arg))); }
       catch (e) { return log('eval ERROR:', e.message); }
+    case 'main':
+      // Direct eval inside the callback, so the code sees its `electron` argument.
+      try { return log('main ->', JSON.stringify(await app.evaluate((electron, src) => eval(src), arg) ?? null)); }
+      catch (e) { return log('main ERROR:', e.message); }
     case 'sleep':
       return page.waitForTimeout(Number(arg) || 1000);
     case 'dark':
@@ -160,7 +166,7 @@ async function runStep(page, step) {
       .catch(() => log('WARNING: backend status line never resolved (not on the home page?)'));
     log('ready. url:', page.url(), '| status:', JSON.stringify((await page.locator('[role=status]').textContent().catch(() => ''))?.replace(/\s+/g, ' ').trim()));
 
-    for (const s of steps) await runStep(page, s);
+    for (const s of steps) await runStep(app, page, s);
   } finally {
     if (app) { await app.close().catch(() => {}); log('app closed'); }
     if (ng) { killTree(ng); log('[ng] stopped'); }

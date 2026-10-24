@@ -433,6 +433,57 @@
           }
         }
       }
+    },
+    "/configs/{config_id}/export": {
+      "get": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "Export Config",
+        "operationId": "export_config",
+        "parameters": [
+          {
+            "name": "config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$",
+              "title": "Config Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ExportFormat"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigExport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -502,6 +553,48 @@
           "required"
         ],
         "title": "ComponentParam"
+      },
+      "ConfigExport": {
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/ExportFormat"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename",
+            "description": "Suggested file name, derived from the config name"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "missing_slots": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "array",
+            "title": "Missing Slots",
+            "description": "Required slots without a component; the Python formats leave `...` in their place"
+          }
+        },
+        "type": "object",
+        "required": [
+          "format",
+          "filename",
+          "content",
+          "missing_slots"
+        ],
+        "title": "ConfigExport"
       },
       "ConfigIn": {
         "properties": {
@@ -753,6 +846,15 @@
           "updated_at"
         ],
         "title": "EnvConfig"
+      },
+      "ExportFormat": {
+        "type": "string",
+        "enum": [
+          "snippet",
+          "script",
+          "json"
+        ],
+        "title": "ExportFormat"
       },
       "HTTPValidationError": {
         "properties": {

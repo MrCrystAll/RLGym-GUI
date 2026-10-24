@@ -1,0 +1,85 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" (click)="closed.emit()">
+  <div
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="export-title"
+    class="flex max-h-full w-full max-w-3xl flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-800 dark:bg-slate-900"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between gap-4">
+      <h2 id="export-title" class="text-lg font-semibold tracking-tight">Export config</h2>
+      <button
+        type="button"
+        class="close cursor-pointer rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:text-slate-400 dark:hover:bg-slate-800"
+        aria-label="Close"
+        (click)="closed.emit()"
+      >✕</button>
+    </div>
+
+    <fieldset class="mt-4">
+      <legend class="sr-only">Format</legend>
+      <div class="grid gap-2 sm:grid-cols-3">
+        @for (f of formats; track f.format) {
+          <label
+            class="format cursor-pointer rounded-md border px-3 py-2 text-sm has-focus-visible:outline-2 has-focus-visible:outline-offset-1 has-focus-visible:outline-orange-500"
+            [class]="format() === f.format
+              ? 'border-orange-400 bg-orange-50 dark:border-orange-700 dark:bg-orange-950/40'
+              : 'border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800'"
+          >
+            <input
+              type="radio"
+              name="export-format"
+              class="sr-only"
+              [value]="f.format"
+              [checked]="format() === f.format"
+              (change)="pick(f.format)"
+            />
+            <span class="block font-medium">{{ f.label }}</span>
+            <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{{ f.hint }}</span>
+          </label>
+        }
+      </div>
+    </fieldset>
+
+    @let r = result();
+    @switch (r.state) {
+      @case ('loading') {
+        <p class="mt-4 text-sm text-slate-500 dark:text-slate-400" role="status">Generating…</p>
+      }
+      @case ('failed') {
+        <p class="mt-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300" role="alert">
+          {{ r.message }}
+        </p>
+      }
+      @case ('done') {
+        @let e = r.export;
+        @if (e.missing_slots.length && e.format !== json) {
+          <p class="missing mt-4 text-sm text-orange-700 dark:text-orange-300">
+            Not chosen yet: <span class="mono">{{ slotList(e.missing_slots) }}</span>.
+            The file has <span class="mono">...</span> in their place, so it won't run until you fill them in.
+          </p>
+        }
+        <p class="mono mt-4 text-xs text-slate-500 dark:text-slate-400">{{ e.filename }}</p>
+        <pre class="preview mono mt-1 min-h-24 flex-1 overflow-auto [font-variant-ligatures:none] rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed dark:border-slate-800 dark:bg-slate-950">{{ e.content }}</pre>
+
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            class="save-file cursor-pointer rounded-md bg-orange-500 px-4 py-1.5 text-sm font-medium text-slate-950 hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+            (click)="save(e)"
+          >Save as…</button>
+          <button
+            type="button"
+            class="copy cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:border-slate-700 dark:hover:bg-slate-800"
+            (click)="copy(e)"
+          >Copy</button>
+          <p class="export-status text-sm wrap-anywhere" role="status">
+            @if (status(); as s) {
+              <span [class]="s.ok ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-300'">{{ s.text }}</span>
+            }
+          </p>
+        </div>
+      }
+    }
+  </div>
+</div>

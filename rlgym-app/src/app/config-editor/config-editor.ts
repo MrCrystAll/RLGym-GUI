@@ -7,6 +7,7 @@ import {
   DiscoveredComponentKindEnum as Kind, DiscoveryService, EnvConfig, SlotCheck, SlotCheckStageEnum as Stage,
   ValidateResult,
 } from '../api';
+import { ConfigExportDialog } from '../config-export/config-export';
 
 const UNREACHABLE = 'Could not reach the backend.';
 
@@ -98,14 +99,14 @@ function sameChoices(a: Choices, b: Choices): boolean {
 
 @Component({
   selector: 'app-config-editor',
-  imports: [RouterLink],
+  imports: [RouterLink, ConfigExportDialog],
   templateUrl: './config-editor.html',
   styleUrl: './config-editor.css',
 })
 export class ConfigEditor {
   private api = inject(ConfigsService);
   private discovery = inject(DiscoveryService);
-  private id = inject(ActivatedRoute).snapshot.paramMap.get('id')!;
+  protected id = inject(ActivatedRoute).snapshot.paramMap.get('id')!;
 
   protected load = signal<Load>({ state: 'loading' });
   protected scan = signal<Scan>({ state: 'scanning' });
@@ -117,6 +118,8 @@ export class ConfigEditor {
   protected saving = signal(false);
   protected saveError = signal<string | null>(null);
   protected justSaved = signal(false);
+
+  protected exporting = signal(false);
 
   // The last run, with the draft it ran on: `validation` hides it as soon as the draft differs.
   private lastValidation = signal<{ run: Validation; choices: Choices }>({ run: { state: 'idle' }, choices: {} });
