@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from pydantic import BaseModel
 
-from app import config, discovery, settings
+from app import config, configs, discovery, export, settings
 
 
 # The operationId (and so the generated client method name) is the route function's name.
@@ -33,11 +33,11 @@ async def check_token(request, call_next):
         return JSONResponse({"detail": "Invalid token"}, status_code=401)
     return await call_next(request)
 
-# Needed in dev (Angular on :4200). In production, the page loads from file://,
+# Needed in dev (Angular on :4200 by default). In production, the page loads from file://,
 # whose origin is "null", so allow that too.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200", "null"],
+    allow_origins=[config.DEV_ORIGIN, "null"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -62,3 +62,5 @@ def get_version() -> Version:
 
 app.include_router(settings.router)
 app.include_router(discovery.router)
+app.include_router(configs.router)
+app.include_router(export.router)

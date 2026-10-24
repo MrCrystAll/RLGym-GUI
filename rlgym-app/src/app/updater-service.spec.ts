@@ -11,6 +11,7 @@ describe('UpdaterService', () => {
     window.rlgym = {
       getBackendConfig: vi.fn(),
       openFile: vi.fn(),
+      saveFile: vi.fn(),
       updater: {
         check: vi.fn(),
         download: vi.fn(),

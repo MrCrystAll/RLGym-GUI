@@ -198,10 +198,319 @@
           }
         }
       }
+    },
+    "/configs": {
+      "get": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "List Configs",
+        "description": "Most recently updated first.",
+        "operationId": "list_configs",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConfigSummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Configs"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "Create Config",
+        "operationId": "create_config",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/configs/validate": {
+      "post": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "Validate Config",
+        "description": "Build every component in the saved interpreter, then RLGym(...) from them; nothing is reset or\nstepped. Argument expressions are evaluated with eval() in the component's module, so they can\nuse whatever it imports.",
+        "operationId": "validate_config",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/configs/{config_id}": {
+      "get": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "Get Config",
+        "operationId": "get_config",
+        "parameters": [
+          {
+            "name": "config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$",
+              "title": "Config Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "Update Config",
+        "operationId": "update_config",
+        "parameters": [
+          {
+            "name": "config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$",
+              "title": "Config Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "Delete Config",
+        "operationId": "delete_config",
+        "parameters": [
+          {
+            "name": "config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$",
+              "title": "Config Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/configs/{config_id}/export": {
+      "get": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "Export Config",
+        "operationId": "export_config",
+        "parameters": [
+          {
+            "name": "config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$",
+              "title": "Config Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ExportFormat"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigExport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "ComponentChoice": {
+        "properties": {
+          "qualified_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Qualified Name",
+            "description": "e.g. my_bot.rewards.GoalReward"
+          },
+          "params": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Params",
+            "description": "Constructor arguments as Python literal expressions, e.g. '1.0', 'None', \"'blue'\"; omitted ones use their default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "qualified_name"
+        ],
+        "title": "ComponentChoice"
+      },
       "ComponentParam": {
         "properties": {
           "name": {
@@ -244,6 +553,131 @@
           "required"
         ],
         "title": "ComponentParam"
+      },
+      "ConfigExport": {
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/ExportFormat"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename",
+            "description": "Suggested file name, derived from the config name"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "missing_slots": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "array",
+            "title": "Missing Slots",
+            "description": "Required slots without a component; the Python formats leave `...` in their place"
+          }
+        },
+        "type": "object",
+        "required": [
+          "format",
+          "filename",
+          "content",
+          "missing_slots"
+        ],
+        "title": "ConfigExport"
+      },
+      "ConfigIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name"
+          },
+          "components": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ComponentChoice"
+            },
+            "propertyNames": {
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "object",
+            "title": "Components",
+            "description": "The chosen component per slot; a missing slot isn't chosen yet"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ConfigIn"
+      },
+      "ConfigSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "slots": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "array",
+            "title": "Slots",
+            "description": "Slots with a component chosen"
+          },
+          "complete": {
+            "type": "boolean",
+            "title": "Complete",
+            "description": "Every required slot has a component"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "updated_at",
+          "slots",
+          "complete"
+        ],
+        "title": "ConfigSummary"
       },
       "DiscoverRequest": {
         "properties": {
@@ -361,6 +795,66 @@
           "params"
         ],
         "title": "DiscoveredComponent"
+      },
+      "EnvConfig": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name"
+          },
+          "components": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ComponentChoice"
+            },
+            "propertyNames": {
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "object",
+            "title": "Components",
+            "description": "The chosen component per slot; a missing slot isn't chosen yet"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "EnvConfig"
+      },
+      "ExportFormat": {
+        "type": "string",
+        "enum": [
+          "snippet",
+          "script",
+          "json"
+        ],
+        "title": "ExportFormat"
       },
       "HTTPValidationError": {
         "properties": {
@@ -483,6 +977,157 @@
         },
         "type": "object",
         "title": "Settings"
+      },
+      "SlotCheck": {
+        "properties": {
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "import",
+                  "kind",
+                  "argument",
+                  "construct"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage",
+            "description": "Where building this slot's component failed; null when it built. import: the class can't be imported; kind: it's not the kind the slot takes; argument: an argument expression failed to evaluate; construct: the constructor raised"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Param",
+            "description": "The argument whose expression failed (stage 'argument')"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "'ExceptionType: message'; null when it built"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stage",
+          "param",
+          "error"
+        ],
+        "title": "SlotCheck"
+      },
+      "ValidateRequest": {
+        "properties": {
+          "components": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ComponentChoice"
+            },
+            "propertyNames": {
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "object",
+            "title": "Components",
+            "description": "The components to build, e.g. the editor's unsaved draft"
+          }
+        },
+        "type": "object",
+        "title": "ValidateRequest"
+      },
+      "ValidateResult": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "description": "Every component built and so did the env"
+          },
+          "slots": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SlotCheck"
+            },
+            "propertyNames": {
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "object",
+            "title": "Slots",
+            "description": "One entry per chosen slot"
+          },
+          "missing": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "transition_engine",
+                "state_mutator",
+                "obs_builder",
+                "action_parser",
+                "reward_fn",
+                "termination_cond",
+                "truncation_cond",
+                "shared_info_provider"
+              ]
+            },
+            "type": "array",
+            "title": "Missing",
+            "description": "Required slots with no component chosen"
+          },
+          "env_built": {
+            "type": "boolean",
+            "title": "Env Built"
+          },
+          "env_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Env Error",
+            "description": "Why RLGym(...) failed; null when it built or wasn't attempted (a component failed or a required slot is missing)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "slots",
+          "missing",
+          "env_built",
+          "env_error"
+        ],
+        "title": "ValidateResult"
       },
       "ValidationError": {
         "properties": {

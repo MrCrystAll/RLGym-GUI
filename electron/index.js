@@ -1,12 +1,15 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
+const fs = require('fs');
 const net = require('net');
 const path = require('path');
 
 let backend = null;          // child process
 let backendConfig = null;    // { port, token, baseUrl }
 let mainWindow = null;
+// Dev only: where `ng serve` runs. Overridable so several dev copies (e.g. one per git worktree) can run at once.
+const DEV_URL = process.env.RLGYM_DEV_URL || 'http://localhost:4200';
 
 // Tries to create a server to see if a port is available
 function getFreePort() {
@@ -69,6 +72,7 @@ async function startBackend() {
       RLGYM_GUI_TOKEN: token,
       RLGYM_GUI_DATA_DIR: app.getPath('userData'),
       RLGYM_GUI_VERSION: app.getVersion(),
+      RLGYM_GUI_DEV_ORIGIN: new URL(DEV_URL).origin,
     },
   });
 
@@ -115,7 +119,7 @@ function createWindow() {
       return { action: 'deny' };
     });
     mainWindow.webContents.on('will-navigate', (event, url) => {
-      const isApp = url.startsWith('file://') || url.startsWith('http://localhost:4200');
+      const isApp = url.startsWith('file://') || url.startsWith(DEV_URL);
       if (!isApp) {
         event.preventDefault();
         if (url.startsWith('https://')) shell.openExternal(url);
@@ -128,7 +132,7 @@ function createWindow() {
         mainWindow.loadFile(path.join(__dirname, 'renderer', 'browser', 'index.html'));
     }
     else{
-        mainWindow.loadURL('http://localhost:4200');
+        mainWindow.loadURL(DEV_URL);
     }
 }
 
@@ -154,6 +158,17 @@ else {
       properties: ['openFile'],
     });
     return canceled ? null : filePaths[0];
+  });
+  // Native "save as" dialog, then writes `content` there; resolves to the path, or null if cancelled.
+  ipcMain.handle('dialog:save-file', async (_event, { title, defaultName, filters, content } = {}) => {
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title,
+      defaultPath: defaultName,
+      filters,
+    });
+    if (canceled || !filePath) return null;
+    await fs.promises.writeFile(filePath, String(content ?? ''), 'utf8');
+    return filePath;
   });
 
   app.whenReady().then(async () => {

@@ -6,6 +6,8 @@ PORT = int(os.environ.get("RLGYM_GUI_PORT", 8000))
 TOKEN = os.environ.get("RLGYM_GUI_TOKEN", "dev-token")
 DATA_DIR = os.environ.get("RLGYM_GUI_DATA_DIR", "./data")
 VERSION = os.environ.get("RLGYM_GUI_VERSION", "0.0.1")
+# Where the Angular dev server runs, for CORS. Electron passes its own when not on the default port.
+DEV_ORIGIN = os.environ.get("RLGYM_GUI_DEV_ORIGIN", "http://localhost:4200")
 # Seconds a worker call may take before the worker is killed. Generous: discovery imports user
 # modules, which can pull in heavy libraries (torch...).
 WORKER_TIMEOUT = float(os.environ.get("RLGYM_GUI_WORKER_TIMEOUT", 60))

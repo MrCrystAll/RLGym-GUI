@@ -1,0 +1,89 @@
+<main class="mx-auto max-w-3xl px-6 py-12">
+  <h1 class="text-2xl font-semibold tracking-tight">Configs</h1>
+  <p class="mt-2 text-slate-600 dark:text-slate-400">
+    Named environment setups: one component for each part of an RLGym environment.
+  </p>
+
+  <form class="mt-8 flex gap-2" (submit)="create($event)">
+    <label for="new-name" class="sr-only">New config name</label>
+    <input
+      id="new-name"
+      type="text"
+      maxlength="100"
+      placeholder="New config name, e.g. Kickoff training"
+      class="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-orange-500 dark:border-slate-700 dark:bg-slate-900"
+      [value]="newName()"
+      (input)="onNameInput($event)"
+      aria-describedby="create-error"
+    />
+    <button
+      type="submit"
+      class="create rounded-md bg-orange-500 px-4 py-1.5 text-sm font-medium text-slate-950 enabled:cursor-pointer enabled:hover:bg-orange-400 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+      [disabled]="!newName().trim() || creating()"
+    >{{ creating() ? 'Creating…' : 'Create' }}</button>
+  </form>
+  <p id="create-error" class="mt-2 min-h-5 text-sm text-red-700 dark:text-red-300" role="status">
+    {{ createError() }}
+  </p>
+
+  @if (deleteError(); as error) {
+    <p class="mt-4 text-sm text-red-700 dark:text-red-300" role="alert">{{ error }}</p>
+  }
+
+  @if (loadError(); as error) {
+    <p class="mt-6 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300" role="alert">
+      {{ error }}
+    </p>
+  } @else {
+    @let list = configs();
+    @if (list === null) {
+      <p class="mt-6 text-sm text-slate-500 dark:text-slate-400">Loading configs…</p>
+    } @else if (list.length === 0) {
+      <p class="empty mt-6 rounded-md border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+        No configs yet. Create one above.
+      </p>
+    } @else {
+      <ul class="mt-6 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+        @for (c of list; track c.id) {
+          <li class="config flex items-center gap-4 px-4 py-3">
+            <div class="min-w-0 flex-1">
+              <a
+                [routerLink]="['/configs', c.id]"
+                class="name block truncate font-medium hover:text-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:hover:text-orange-400"
+              >{{ c.name }}</a>
+              <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                @if (c.complete) {
+                  <span class="text-green-700 dark:text-green-400">Complete</span>
+                } @else {
+                  {{ c.slots.length === 0 ? 'Empty' : c.slots.length + ' of 8 parts chosen' }}
+                }
+                · updated {{ c.updated_at | date: 'medium' }}
+              </p>
+            </div>
+
+            @if (confirmingDelete() === c.id) {
+              <span class="text-sm text-slate-600 dark:text-slate-300">Delete?</span>
+              <button
+                type="button"
+                class="confirm-delete cursor-pointer rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+                (click)="confirmDelete(c.id)"
+              >Delete</button>
+              <button
+                type="button"
+                class="cursor-pointer rounded-md px-3 py-1 text-sm hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:hover:bg-slate-800"
+                (click)="confirmingDelete.set(null)"
+              >Cancel</button>
+            } @else {
+              <button
+                type="button"
+                class="delete cursor-pointer rounded-md px-3 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-red-300"
+                [attr.aria-label]="'Delete ' + c.name"
+                (click)="confirmingDelete.set(c.id)"
+              >Delete</button>
+            }
+          </li>
+        }
+      </ul>
+    }
+  }
+</main>
