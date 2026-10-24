@@ -78,7 +78,7 @@ def stop_worker() -> None:
     _worker.stop()
 
 
-def _interpreter(override: str | None = None) -> str:
+def interpreter(override: str | None = None) -> str:
     python = (override or "").strip() or settings.load().python
     if not python:
         raise HTTPException(409, "No Python interpreter selected; choose one in Settings")
@@ -94,7 +94,7 @@ def get_python_info(
     worker: WorkerDep,
     python: Annotated[str | None, Query(description="Interpreter to check instead of the saved one")] = None,
 ) -> PythonInfo:
-    executable = _interpreter(python)
+    executable = interpreter(python)
     try:
         return PythonInfo.model_validate(worker.call(executable, "info"))
     except WorkerError as exc:
@@ -104,7 +104,7 @@ def get_python_info(
 
 @router.post("/components/discover")
 def discover_components(worker: WorkerDep, request: DiscoverRequest) -> DiscoverResult:
-    python = _interpreter()
+    python = interpreter()
     modules = settings.load().modules if request.modules is None else request.modules
     try:
         result = worker.call(python, "discover", {"modules": modules})

@@ -4,7 +4,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   ComponentChoice, ConfigSummarySlotsEnum as Slot, ConfigsService, DiscoverResult, DiscoveredComponent,
-  DiscoveredComponentKindEnum as Kind, DiscoveryService, EnvConfig,
+  DiscoveredComponentKindEnum as Kind, DiscoveryService, EnvConfig, SlotCheck, SlotCheckStageEnum as Stage,
+  ValidateResult,
 } from '../api';
 import { ConfigExportDialog } from '../config-export/config-export';
 
@@ -37,6 +38,22 @@ type Scan =
   | { state: 'no-interpreter' }                          // 409: nothing selected in Settings
   | { state: 'failed'; message: string };               // worker failure or backend unreachable
 
+// Building the draft's components in the worker. A result only describes the draft it was run on,
+// so editing a component or an argument drops it.
+type Validation =
+  | { state: 'idle' }
+  | { state: 'running' }
+  | { state: 'done'; result: ValidateResult }
+  | { state: 'failed'; message: string };              // no interpreter, worker failure, unreachable
+
+// How a slot-level failure reads on its card (an argument's failure shows under that argument).
+const STAGE_LABELS: Record<Stage, string> = {
+  [Stage.Import]: "Can't import it",
+  [Stage.Kind]: 'Wrong kind of component',
+  [Stage.Argument]: 'Bad argument',
+  [Stage.Construct]: 'The constructor failed',
+};
+
 // One constructor argument as the form shows it. Components missing from the scan have no
 // signature, so only their saved arguments are shown, untyped.
 interface ParamField {
@@ -46,6 +63,7 @@ interface ParamField {
   required: boolean;
   value: string;
   missing: boolean;   // required and empty
+  error: string | null;   // its expression failed in the last validation
 }
 
 // The backend's message when it has one (409 duplicate name, 422 validation), else a generic one.
@@ -103,22 +121,51 @@ export class ConfigEditor {
 
   protected exporting = signal(false);
 
+  // The last run, with the draft it ran on: `validation` hides it as soon as the draft differs.
+  private lastValidation = signal<{ run: Validation; choices: Choices }>({ run: { state: 'idle' }, choices: {} });
+
   protected dirty = computed(() => {
     const saved = this.saved();
     return saved !== null
       && (this.name().trim() !== saved.name || !sameChoices(this.choices(), choicesOf(saved)));
   });
 
+  protected validation = computed<Validation>(() => {
+    const { run, choices } = this.lastValidation();
+    return sameChoices(choices, this.choices()) ? run : { state: 'idle' };
+  });
+
   protected slots = computed(() => {
     const s = this.scan();
     const choices = this.choices();
+    const v = this.validation();
     return SLOTS.map((def) => {
       const options = s.state === 'done' ? s.result.components[def.kind] ?? [] : [];
       const choice = choices[def.slot];
       const component = choice ? options.find((c) => c.qualified_name === choice.qualified_name) ?? null : null;
-      const params = choice ? this.fields(choice, component) : [];
-      return { ...def, options, choice, component, params, missing: params.filter((p) => p.missing).length };
+      const check = v.state === 'done' ? v.result.slots[def.slot] : undefined;
+      const params = choice ? this.fields(choice, component, check) : [];
+      // An argument's failure shows under that argument; anything else on the card.
+      const shownUnderParam = params.some((p) => p.error);
+      return {
+        ...def, options, choice, component, params, missing: params.filter((p) => p.missing).length,
+        built: check !== undefined && check.error == null,
+        error: check?.error && !shownUnderParam ? `${STAGE_LABELS[check.stage!]}: ${check.error}` : null,
+      };
     });
+  });
+
+  // The overall outcome of the last validation, for the line next to the Validate button.
+  protected verdict = computed(() => {
+    const v = this.validation();
+    if (v.state !== 'done') return null;
+    const r = v.result;
+    const failed = Object.values(r.slots).filter((c) => c.error != null).length;
+    const problems = [
+      failed && (failed === 1 ? '1 component failed to build' : `${failed} components failed to build`),
+      r.missing.length && (r.missing.length === 1 ? '1 required part missing' : `${r.missing.length} required parts missing`),
+    ].filter(Boolean) as string[];
+    return { ok: r.ok, problems, envError: r.env_error ?? null };
   });
 
   // What still stands between this config and a buildable env.
@@ -168,16 +215,34 @@ export class ConfigEditor {
     }
   }
 
-  private fields(choice: Required<ComponentChoice>, component: DiscoveredComponent | null): ParamField[] {
+  private fields(
+    choice: Required<ComponentChoice>, component: DiscoveredComponent | null, check: SlotCheck | undefined,
+  ): ParamField[] {
+    const errorFor = (name: string) => (check?.stage === Stage.Argument && check.param === name ? check.error : null);
     if (!component) {
       return Object.entries(choice.params).map(([name, value]) => (
-        { name, type: null, default: null, required: false, value, missing: false }
+        { name, type: null, default: null, required: false, value, missing: false, error: errorFor(name) }
       ));
     }
     return component.params.map((p) => {
       const value = choice.params[p.name] ?? '';
-      return { ...p, value, missing: p.required && !value };
+      return { ...p, value, missing: p.required && !value, error: errorFor(p.name) };
     });
+  }
+
+  // Builds the draft as it is now, unsaved changes included.
+  protected async validate() {
+    const choices = this.choices();
+    this.lastValidation.set({ run: { state: 'running' }, choices });
+    let run: Validation;
+    try {
+      const result = await firstValueFrom(this.api.validateConfig({ validateRequest: { components: choices } }));
+      run = { state: 'done', result };
+    } catch (err) {
+      run = { state: 'failed', message: messageOf(err) };
+    }
+    // Paired with the draft it ran on, so a result for a draft edited meanwhile never shows.
+    this.lastValidation.set({ run, choices });
   }
 
   private edited() {

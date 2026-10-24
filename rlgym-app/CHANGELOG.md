@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A Configs page: create named environment configs, see how far along each one is, and delete them.
 - A config editor: open a config to rename it, pick a discovered component for each part of the env, and fill in its constructor arguments in a form generated from its signature. Required parts and arguments that are still empty are highlighted.
+- Validate a config from its editor: every chosen component is built in your Python interpreter (arguments are evaluated as Python expressions, in the component's module), then the RLGym env itself, without resetting or stepping it. Errors show on the component or under the argument that caused them. Unsaved changes are included.
 - Export a saved config from its editor as a Python snippet (the imports and the `RLGym(...)` call), a runnable script that builds the env and resets it once, or JSON. Preview it, copy it, or save it to a file.
 
 ## [0.2.0] - 2026-10-17

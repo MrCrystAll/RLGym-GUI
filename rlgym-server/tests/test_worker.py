@@ -82,6 +82,92 @@ def test_discover_keeps_generic_types_whole(worker):
     assert params["scale"]["type"] == "float"            # string annotation, kept as written
 
 
+def _choice(name, **params):
+    return {"qualified_name": f"env_components.{name}", "params": params}
+
+
+FULL = {
+    "transition_engine": _choice("Engine"),
+    "state_mutator": _choice("Mutator"),
+    "obs_builder": _choice("Obs"),
+    "action_parser": _choice("Actions"),
+    "reward_fn": _choice("Reward"),
+}
+BUILT = {"stage": None, "param": None, "error": None}
+
+
+def test_validate_builds_every_component_and_the_env(worker):
+    components = {**FULL, "truncation_cond": _choice("Timeout", seconds="300 / 120")}
+    result = worker.call(PYTHON, "validate", {"components": components})
+    assert result == {
+        "ok": True, "slots": {slot: BUILT for slot in components}, "missing": [],
+        "env_built": True, "env_error": None,
+    }
+
+
+def test_validate_evaluates_arguments_in_the_components_module(worker):
+    # math is imported by env_components, not by the worker.
+    components = {**FULL, "obs_builder": _choice("Obs", scale="math.sqrt(4) * TAU")}
+    assert worker.call(PYTHON, "validate", {"components": components})["ok"] is True
+
+
+def test_validate_reports_each_kind_of_failure_per_slot(worker):
+    components = {
+        **FULL,
+        "obs_builder": _choice("Obs", scale="1 +"),                       # not an expression
+        "reward_fn": _choice("Picky", weight="-1"),                       # constructor raises
+        "termination_cond": _choice("Timeout"),                           # required argument missing
+        "truncation_cond": {"qualified_name": "env_components.Nope", "params": {}},
+        "shared_info_provider": _choice("Reward"),                        # wrong kind for the slot
+        "action_parser": _choice("Actions", unused="undefined_name"),     # name doesn't exist
+    }
+    result = worker.call(PYTHON, "validate", {"components": components})
+    slots = result["slots"]
+
+    assert slots["transition_engine"] == BUILT
+    assert slots["obs_builder"]["stage"] == "argument"
+    assert slots["obs_builder"]["param"] == "scale"
+    assert slots["obs_builder"]["error"].startswith("SyntaxError")
+    assert slots["action_parser"] == {
+        "stage": "argument", "param": "unused", "error": "NameError: name 'undefined_name' is not defined",
+    }
+    assert slots["reward_fn"] == {"stage": "construct", "param": None, "error": "ValueError: weight must be >= 0"}
+    assert slots["termination_cond"]["stage"] == "construct"
+    assert "seconds" in slots["termination_cond"]["error"]
+    assert slots["truncation_cond"]["stage"] == "import"
+    assert "Nope" in slots["truncation_cond"]["error"]
+    assert slots["shared_info_provider"] == {
+        "stage": "kind", "param": None, "error": "env_components.Reward is not a SharedInfoProvider",
+    }
+    # The env isn't attempted: its error would only repeat the ones above.
+    assert result["ok"] is False
+    assert result["env_built"] is False and result["env_error"] is None
+
+
+def test_validate_reports_missing_required_slots(worker):
+    result = worker.call(PYTHON, "validate", {"components": {"reward_fn": _choice("Reward")}})
+    assert result["slots"] == {"reward_fn": BUILT}
+    assert result["missing"] == ["transition_engine", "state_mutator", "obs_builder", "action_parser"]
+    assert result["ok"] is False and result["env_error"] is None
+
+
+def test_validate_reports_an_env_that_fails_to_build(worker):
+    components = {**FULL, "shared_info_provider": _choice("BrokenInfo")}
+    result = worker.call(PYTHON, "validate", {"components": components})
+    assert result["slots"]["shared_info_provider"] == BUILT
+    assert result["env_built"] is False
+    assert result["env_error"] == "RuntimeError: no shared info today"
+    assert result["ok"] is False
+
+
+def test_validate_reports_a_module_that_fails_to_import(worker):
+    components = {**FULL, "reward_fn": {"qualified_name": "broken_module.Anything", "params": {}}}
+    result = worker.call(PYTHON, "validate", {"components": components})
+    assert result["slots"]["reward_fn"] == {
+        "stage": "import", "param": None, "error": "RuntimeError: broken on purpose",
+    }
+
+
 def test_user_prints_go_to_the_log_not_the_protocol(worker, data_dir):
     worker.call(PYTHON, "discover", {"modules": ["sample_components"]})
     worker.stop()

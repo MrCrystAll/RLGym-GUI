@@ -119,6 +119,11 @@
                 }
               </select>
 
+              @if (sl.error) {
+                <p class="check-error mono mt-2 text-xs wrap-anywhere text-red-700 dark:text-red-300">{{ sl.error }}</p>
+              } @else if (sl.built) {
+                <p class="check-ok mt-2 text-xs text-green-700 dark:text-green-400">✓ Builds</p>
+              }
               @if (sl.choice && !sl.component && s.state === 'done') {
                 <p class="not-found mt-2 text-xs text-orange-700 dark:text-orange-300">
                   This component wasn't found in the last scan. Is its module still listed in
@@ -143,14 +148,20 @@
                           type="text"
                           spellcheck="false"
                           class="mono w-full rounded-md border px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-orange-500"
-                          [class]="p.missing
-                            ? 'border-orange-400 bg-orange-50 dark:border-orange-700 dark:bg-orange-950/40'
-                            : 'border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900'"
+                          [class]="p.error
+                            ? 'border-red-400 bg-red-50 dark:border-red-800 dark:bg-red-950/40'
+                            : p.missing
+                              ? 'border-orange-400 bg-orange-50 dark:border-orange-700 dark:bg-orange-950/40'
+                              : 'border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900'"
                           [value]="p.value"
                           [placeholder]="p.required ? 'required' : (p.default ?? '')"
-                          [attr.aria-invalid]="p.missing"
+                          [attr.aria-invalid]="p.missing || !!p.error"
+                          [attr.aria-describedby]="p.error ? 'param-error-' + sl.slot + '-' + p.name : null"
                           (input)="setParam(sl.slot, p.name, $event)"
                         />
+                        @if (p.error) {
+                          <p [id]="'param-error-' + sl.slot + '-' + p.name" class="param-error mono mt-1 text-xs wrap-anywhere text-red-700 dark:text-red-300">{{ p.error }}</p>
+                        }
                       </div>
                     </div>
                   }
@@ -162,7 +173,14 @@
           }
         </div>
 
-        <div class="sticky bottom-0 mt-6 flex items-center gap-3 border-t border-slate-200 bg-slate-50/90 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+        <div class="sticky bottom-0 mt-6 flex flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50/90 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+          @let v = validation();
+          <button
+            type="button"
+            class="validate rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium enabled:cursor-pointer enabled:hover:bg-slate-100 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:border-slate-700 dark:enabled:hover:bg-slate-900"
+            [disabled]="v.state === 'running'"
+            (click)="validate()"
+          >{{ v.state === 'running' ? 'Validating…' : 'Validate' }}</button>
           <button
             type="submit"
             class="save rounded-md bg-orange-500 px-4 py-1.5 text-sm font-medium text-slate-950 enabled:cursor-pointer enabled:hover:bg-orange-400 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
@@ -191,6 +209,29 @@
             [attr.title]="dirty() ? 'Save your changes first: the export uses the saved config' : null"
             (click)="exporting.set(true)"
           >Export…</button>
+          <div class="validation-status w-full text-sm" role="status">
+            @switch (v.state) {
+              @case ('running') {
+                <p class="text-slate-500 dark:text-slate-400">Building the components in your interpreter…</p>
+              }
+              @case ('failed') {
+                <p class="text-red-700 dark:text-red-300">Couldn't validate: {{ v.message }}</p>
+              }
+              @case ('done') {
+                @let r = verdict()!;
+                @if (r.ok) {
+                  <p class="text-green-700 dark:text-green-400">✓ Valid: every component and the env build.</p>
+                } @else {
+                  <p class="text-red-700 dark:text-red-300">
+                    Not valid{{ r.problems.length ? ': ' + r.problems.join(' · ') : '' }}.
+                  </p>
+                  @if (r.envError) {
+                    <p class="env-error mono mt-1 wrap-anywhere text-red-700 dark:text-red-300">RLGym(...) failed: {{ r.envError }}</p>
+                  }
+                }
+              }
+            }
+          </div>
         </div>
       </form>
       @if (exporting()) {

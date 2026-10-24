@@ -6,6 +6,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { ConfigEditor } from './config-editor';
 import {
   ConfigsService, DiscoverResult, DiscoveredComponentKindEnum as Kind, DiscoveryService, EnvConfig,
+  SlotCheckStageEnum as Stage, ValidateResult, ValidateResultMissingEnum as Missing,
 } from '../api';
 
 const ID = 'a'.repeat(32);
@@ -42,7 +43,7 @@ const TOUCH_REWARD = {
 
 describe('ConfigEditor', () => {
   let fixture: ComponentFixture<ConfigEditor>;
-  let api: Record<'getConfig' | 'updateConfig' | 'exportConfig', ReturnType<typeof vi.fn>>;
+  let api: Record<'getConfig' | 'updateConfig' | 'validateConfig' | 'exportConfig', ReturnType<typeof vi.fn>>;
   let discovery: { discoverComponents: ReturnType<typeof vi.fn> };
 
   const el = () => fixture.nativeElement as HTMLElement;
@@ -77,7 +78,7 @@ describe('ConfigEditor', () => {
   }
 
   beforeEach(async () => {
-    api = { getConfig: vi.fn(), updateConfig: vi.fn(), exportConfig: vi.fn() };
+    api = { getConfig: vi.fn(), updateConfig: vi.fn(), validateConfig: vi.fn(), exportConfig: vi.fn() };
     discovery = { discoverComponents: vi.fn() };
     await TestBed.configureTestingModule({
       imports: [ConfigEditor],
@@ -214,6 +215,93 @@ describe('ConfigEditor', () => {
     await render(of(config()), throwError(() => new HttpErrorResponse({ status: 409 })));
     expect(text('.notice')).toContain('No Python interpreter selected yet');
     expect(el().querySelectorAll('section.slot')).toHaveLength(8);
+  });
+
+  describe('validation', () => {
+    const BUILT = { stage: null, param: null, error: null };
+    const GOAL = { qualified_name: GOAL_REWARD.qualified_name, params: { team: '1' } };
+
+    async function validate(response: Observable<ValidateResult>) {
+      api.validateConfig.mockReturnValue(response);
+      el().querySelector<HTMLButtonElement>('button.validate')!.click();
+      await fixture.whenStable();
+    }
+
+    it('validates the unsaved draft and shows what built', async () => {
+      await render(of(config()), of(result({ [Kind.RewardFunction]: [GOAL_REWARD] })));
+      await pick('reward_fn', GOAL_REWARD.qualified_name);
+      await type(param('reward_fn', 'team'), '1');
+
+      await validate(of({
+        ok: false, slots: { reward_fn: BUILT }, env_built: false, env_error: null,
+        missing: [Missing.TransitionEngine, Missing.StateMutator, Missing.ObsBuilder, Missing.ActionParser],
+      }));
+
+      expect(api.validateConfig).toHaveBeenCalledWith({ validateRequest: { components: { reward_fn: GOAL } } });
+      expect(text('section.slot[data-slot="reward_fn"] .check-ok')).toBe('✓ Builds');
+      expect(text('.validation-status')).toBe('Not valid: 4 required parts missing.');
+    });
+
+    it('says when everything builds', async () => {
+      await render(of(config({ reward_fn: GOAL })), of(result({ [Kind.RewardFunction]: [GOAL_REWARD] })));
+      await validate(of({ ok: true, slots: { reward_fn: BUILT }, missing: [], env_built: true, env_error: null }));
+      expect(text('.validation-status')).toBe('✓ Valid: every component and the env build.');
+    });
+
+    it('shows an argument error under that argument, and other errors on the card', async () => {
+      const saved = config({
+        reward_fn: GOAL,
+        truncation_cond: { qualified_name: 'my_bot.done.Gone', params: {} },
+      });
+      await render(of(saved), of(result({ [Kind.RewardFunction]: [GOAL_REWARD] })));
+      await validate(of({
+        ok: false, missing: [], env_built: false, env_error: null,
+        slots: {
+          reward_fn: { stage: Stage.Argument, param: 'team', error: "NameError: name 'x' is not defined" },
+          truncation_cond: { stage: Stage.Import, param: null, error: "ModuleNotFoundError: No module named 'my_bot'" },
+        },
+      }));
+
+      expect(param('reward_fn', 'team').getAttribute('aria-invalid')).toBe('true');
+      expect(text('section.slot[data-slot="reward_fn"] .param-error')).toBe("NameError: name 'x' is not defined");
+      expect(slot('reward_fn').querySelector('.check-error')).toBeNull();        // not repeated on the card
+      expect(text('section.slot[data-slot="truncation_cond"] .check-error'))
+        .toBe("Can't import it: ModuleNotFoundError: No module named 'my_bot'");
+      expect(text('.validation-status')).toBe('Not valid: 2 components failed to build.');
+    });
+
+    it('shows why the env itself failed to build', async () => {
+      await render(of(config({ reward_fn: GOAL })));
+      await validate(of({
+        ok: false, slots: { reward_fn: BUILT }, missing: [], env_built: false, env_error: 'RuntimeError: nope',
+      }));
+      expect(text('.env-error')).toBe('RLGym(...) failed: RuntimeError: nope');
+    });
+
+    it('drops the result once a component or argument changes, but not on a rename', async () => {
+      await render(of(config({ reward_fn: GOAL })), of(result({ [Kind.RewardFunction]: [GOAL_REWARD] })));
+      await validate(of({ ok: true, slots: { reward_fn: BUILT }, missing: [], env_built: true, env_error: null }));
+
+      await type(el().querySelector<HTMLInputElement>('#config-name')!, 'Renamed');
+      expect(text('.validation-status')).toContain('Valid');
+
+      await type(param('reward_fn', 'team'), '2');
+      expect(text('.validation-status')).toBe('');
+      expect(slot('reward_fn').querySelector('.check-ok')).toBeNull();
+
+      await type(param('reward_fn', 'team'), '1');                    // back to the validated draft
+      expect(text('.validation-status')).toContain('Valid');
+    });
+
+    it("explains when it couldn't run", async () => {
+      await render(of(config()));
+      await validate(throwError(() => new HttpErrorResponse({
+        status: 409, error: { detail: 'No Python interpreter selected; choose one in Settings' },
+      })));
+      expect(text('.validation-status')).toBe(
+        "Couldn't validate: No Python interpreter selected; choose one in Settings",
+      );
+    });
   });
 
   it('says when the config does not exist', async () => {
